@@ -1,29 +1,38 @@
 const Karaoke = require('../models/Karaoke');
 const path = require('path');
 
-// Lấy danh sách quán karaoke
+
+// Lấy danh sách quán karaoke của người dùng đang đăng nhập
 exports.getAllKaraokes = async (req, res) => {
   try {
-    const karaokes = await Karaoke.find();
+    // Lấy userId từ query, body hoặc từ session nếu có
+    const userId = req.body.userId || req.query.userId;  // Hoặc từ session nếu dùng session
+    if (!userId) {
+      return res.status(400).json({ message: "userId không được cung cấp" });
+    }
+
+    // Lọc các quán karaoke theo userId
+    const karaokes = await Karaoke.find({ chu_so_huu_id: userId });
     res.status(200).json(karaokes);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Tạo quán karaoke mới
-exports.createKaraoke = async (req, res) => {
-  try {
-    // Tạo document từ body request
-    const karaoke = new Karaoke(req.body);
 
-    // Lưu document
+exports.createKaraoke = async (req, res) => {
+  // console.log("Dữ liệu nhận được từ client:", req.body);  // Kiểm tra dữ liệu từ client
+  try {
+    const karaoke = new Karaoke({
+      ...req.body,
+      chu_so_huu_id: req.body.chu_so_huu_id || req.userId  // Lưu chu_so_huu_id từ request nếu có
+    });
+
     await karaoke.save();
 
-    // Trả về `_id` mặc định và thông tin karaoke
     res.status(201).json({
       message: 'Karaoke created successfully',
-      id: karaoke._id, // Trả về `_id` của quán karaoke
+      id: karaoke._id,
       karaoke,
     });
   } catch (error) {
@@ -32,11 +41,21 @@ exports.createKaraoke = async (req, res) => {
 };
 
 
-// Cập nhật thông tin quán karaoke
+// Cập nhật thông tin quán karaoke của người dùng hiện tại
 exports.updateKaraoke = async (req, res) => {
   try {
-    const updatedKaraoke = await Karaoke.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.status(200).json({ message: 'Karaoke updated successfully', updatedKaraoke });
+    // Tìm quán karaoke của người dùng hiện tại
+    const karaoke = await Karaoke.findOneAndUpdate(
+      { _id: req.params.id},  // Chỉ tìm quán của người dùng hiện tại
+      req.body,
+      { new: true }  // Trả về quán karaoke đã cập nhật
+    );
+
+    if (!karaoke) {
+      return res.status(404).json({ message: 'Quán karaoke không tìm thấy hoặc bạn không có quyền cập nhật' });
+    }
+
+    res.status(200).json({ message: 'Karaoke updated successfully', karaoke });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

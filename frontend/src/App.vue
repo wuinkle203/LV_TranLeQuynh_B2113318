@@ -28,4 +28,23 @@ export default {
 h1 {
   color: blue;
 }
+
+
+/* Đặt font chữ mặc định cho toàn bộ ứng dụng */
+* {
+  font-family: 'Arial', sans-serif !important; /* Hoặc chọn font chữ bạn muốn */
+  box-sizing: border-box; /* Giúp dễ quản lý kích thước của các phần tử */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Arial', sans-serif;
+}
+
+/* Cải tiến các font chữ cho các phần tử cụ thể nếu cần */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Arial', sans-serif;
+}
+
 </style>
