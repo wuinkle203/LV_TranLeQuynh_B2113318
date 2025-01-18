@@ -1,38 +1,67 @@
 <template>
-  <div>
+  <div class="container">
     <h3>Quản lý Phòng quán Karaoke</h3>
 
+    <!-- Form Thêm Phòng -->
+    <button class="add-room-button" @click="toggleForm">Thêm Phòng</button>
+    <form v-if="isFormVisible" @submit.prevent="addRoom">
+      <input type="text" v-model="newRoom.ten_phong" placeholder="Tên phòng" required />
+      <input type="text" v-model="newRoom.loai_phong" placeholder="Loại phòng" required />
+      <input type="number" v-model="newRoom.suc_chua" placeholder="Sức chứa" required />
+      <input type="number" v-model="newRoom.gia_theo_gio" placeholder="Giá theo giờ" required />
+      <textarea v-model="newRoom.mo_ta" placeholder="Mô tả"></textarea>
+      <select v-model="newRoom.trang_thai" required>
+        <option value="trong">Đang Hoạt Động</option>
+        <option value="dang_hoat_dong">Đã Được Đặt</option>
+        <option value="can_bao_tri">Đang Sửa Chửa</option>
+      </select>
+      <input type="file" @change="onFileChange" multiple />
+      <div class="preview-images">
+        <div v-for="(image, index) in previewImages" :key="index" class="preview-image">
+          <img :src="image" alt="Preview" />
+        </div>
+      </div>
+      <button type="submit">Thêm phòng</button>
+    </form>
+    <div v-if="rooms.length" class="room-list"><h3>Danh sách phòng</h3></div>
     <!-- Danh sách Phòng -->
-    <div v-if="rooms.length">
-      <h3>Danh sách phòng</h3>
-      <div v-for="room in rooms" :key="room._id" class="room-card">
+    <div v-if="rooms.length" class="room-list">
+      <div v-for="room in paginatedRooms" :key="room._id" class="room-card">
         <h4>{{ room.ten_phong }}</h4>
         <p>Loại phòng: {{ room.loai_phong }}</p>
         <p>Sức chứa: {{ room.suc_chua }}</p>
         <p>Giá theo giờ: {{ room.gia_theo_gio }} VNĐ</p>
+        <p class="trangthai">
+          Trạng thái
+          <div v-if="room.trang_thai == 'trong'" class="trang_thai">: Phòng Trống</div>
+          <div v-if="room.trang_thai == 'dang_su_dung'" class="trang_thai"> Phòng Đã Được Đặt</div>
+          <div v-if="room.trang_thai == 'can_bao_tri'" class="trang_thai">: Phòng Đang Được Bảo Trì</div>
+        </p>
         <p>Mô tả: {{ room.mo_ta }}</p>
-
-        <!-- Hiển thị hình ảnh phòng (nếu có) -->
         <div v-if="room.hinh_anh && room.hinh_anh.length">
           <h5>Hình ảnh phòng:</h5>
           <div class="room-images">
             <img v-for="(image, index) in room.hinh_anh" :key="index" :src="'http://localhost:8080/uploads/' + image" alt="Room Image" class="room-image" />
           </div>
         </div>
-
-        <!-- Nút Sửa -->
-        <button @click="prepareEditRoom(room)">Sửa</button>
-        <button @click="deleteRoom(room._id)">Xóa</button>
-
-        <!-- Form Chỉnh sửa phòng (hiển thị khi phòng được chọn để sửa) -->
-        <div v-if="isEditing && editingRoomId === room._id">
+        <div class="button-container">
+          <button @click="toggleEditMode(room)">Sửa</button>
+          <button @click="deleteRoom(room._id)">Xóa</button>
+        </div>
+        <div v-if="currentRoom._id === room._id && editMode">
+          <h3>Sửa Phòng</h3>
           <form @submit.prevent="updateRoom">
-            <input type="text" v-model="room.ten_phong" placeholder="Tên phòng" required />
-            <input type="text" v-model="room.loai_phong" placeholder="Loại phòng" required />
-            <input type="number" v-model="room.suc_chua" placeholder="Sức chứa" required />
-            <input type="number" v-model="room.gia_theo_gio" placeholder="Giá theo giờ" required />
-            <textarea v-model="room.mo_ta" placeholder="Mô tả"></textarea>
-            <input type="file" @change="onFileChange" multiple />
+            <input type="text" v-model="currentRoom.ten_phong" placeholder="Tên phòng" required />
+            <input type="text" v-model="currentRoom.loai_phong" placeholder="Loại phòng" required />
+            <input type="number" v-model="currentRoom.suc_chua" placeholder="Sức chứa" required />
+            <input type="number" v-model="currentRoom.gia_theo_gio" placeholder="Giá theo giờ" required />
+            <textarea v-model="currentRoom.mo_ta" placeholder="Mô tả"></textarea>
+            <select v-model="currentRoom.trang_thai" required>
+              <option value="trong"> Phòng Trống</option>
+              <option value="dang_su_dung"> Đã Được Đặt</option>
+              <option value="can_bao_tri"> Đang Sửa Chửa</option>
+            </select>
+            <input type="file" @change="onFileChangeEdit" multiple />
             <div class="preview-images">
               <div v-for="(image, index) in previewImages" :key="index" class="preview-image">
                 <img :src="image" alt="Preview" />
@@ -42,27 +71,17 @@
           </form>
         </div>
       </div>
+            <!-- Điều hướng phân trang -->
+            <div class="pagination">
+              <button @click="prevPage" :disabled="currentPage === 1">Trang trước</button>
+              <span>Trang {{ currentPage }} / {{ totalPages }}</span>
+              <button @click="nextPage" :disabled="currentPage === totalPages">Trang sau</button>
+            </div>
     </div>
+    
     <div v-else>
       <p>Chưa có phòng nào. Hãy thêm phòng mới!</p>
     </div>
-
-    <!-- Form Thêm Phòng (có thể giữ lại ở trên nếu cần) -->
-    <button @click="toggleForm">{{ isEditing ? 'Hủy chỉnh sửa' : 'Thêm Phòng' }}</button>
-    <form v-if="showForm" @submit.prevent="isEditing ? updateRoom() : addRoom()">
-      <input type="text" v-model="room.ten_phong" placeholder="Tên phòng" required />
-      <input type="text" v-model="room.loai_phong" placeholder="Loại phòng" required />
-      <input type="number" v-model="room.suc_chua" placeholder="Sức chứa" required />
-      <input type="number" v-model="room.gia_theo_gio" placeholder="Giá theo giờ" required />
-      <textarea v-model="room.mo_ta" placeholder="Mô tả"></textarea>
-      <input type="file" @change="onFileChange" multiple />
-      <div class="preview-images">
-        <div v-for="(image, index) in previewImages" :key="index" class="preview-image">
-          <img :src="image" alt="Preview" />
-        </div>
-      </div>
-      <button type="submit">{{ isEditing ? 'Cập nhật phòng' : 'Thêm phòng' }}</button>
-    </form>
   </div>
 </template>
 
@@ -73,23 +92,34 @@ import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
 
 export default {
-  props: ["karaokeId", "karaokeName"], // Nhận karaokeId và karaokeName từ props
+  props: ["karaokeId", "karaokeName"],
   data() {
     return {
       rooms: [],
-      showForm: false,
-      isEditing: false,
-      editingRoomId: null, // ID của phòng đang sửa
-      room: {
+      newRoom: {
         ten_phong: "",
         loai_phong: "",
         suc_chua: 0,
         gia_theo_gio: 0,
         mo_ta: "",
+        trang_thai: "trong",
         hinh_anh: [],
       },
-      selectedFiles: [],  // Dữ liệu lưu các tệp đã chọn
-      previewImages: [],  // Dữ liệu lưu preview của các hình ảnh
+      currentRoom: {
+        _id: null,
+        ten_phong: "",
+        loai_phong: "",
+        suc_chua: 0,
+        gia_theo_gio: 0,
+        mo_ta: "",
+        trang_thai: "",
+        hinh_anh: [],
+      },
+      currentPage: 1, // Trang hiện tại
+      itemsPerPage: 6, // Số lượng phòng trên mỗi trang
+      previewImages: [],
+      editMode: false,
+      isFormVisible: false, // Biến để kiểm soát hiển thị form thêm phòng
     };
   },
   mounted() {
@@ -97,238 +127,190 @@ export default {
       console.error("karaokeId is missing");
       return;
     }
-    console.log("Karaoke ID:", this.karaokeId); // Log karaokeId
     this.fetchRooms();
   },
+  computed: {
+    totalPages() {
+      return Math.ceil(this.rooms.length / this.itemsPerPage);
+    },
+    paginatedRooms() {
+      const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+      const endIndex = startIndex + this.itemsPerPage;
+      return this.rooms.slice(startIndex, endIndex);
+    },
+  },
   methods: {
-    // Lấy danh sách phòng từ server
+    prevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+    }
+  },
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+    }
+  },
     fetchRooms() {
       axios
         .get(`http://localhost:8080/api/karaokes/${this.karaokeId}/phong`)
         .then((response) => {
-          console.log("Dữ liệu phòng nhận được:", response.data);
-          if (response.data && Array.isArray(response.data.phong)) {
-            this.rooms = response.data.phong;
-          } else {
-            console.log("Không có phòng nào.");
-            this.rooms = [];
-          }
+          this.rooms = response.data.phong || [];
         })
         .catch((error) => {
-          console.error("Lỗi khi lấy danh sách phòng:", error);
           alert("Không thể tải danh sách phòng.");
         });
     },
 
-
-
-
-    // Bật/Tắt form thêm/sửa phòng
-    toggleForm() {
-      this.showForm = !this.showForm;
-      if (!this.showForm) {
-        this.resetForm();
-      }
-    },
-
-    // Xử lý khi chọn tệp (hình ảnh)
     onFileChange(event) {
-      this.selectedFiles = event.target.files;
-      console.log("Selected files:", this.selectedFiles);
-      this.previewImages = Array.from(this.selectedFiles).map((file) =>
+      this.newRoom.hinh_anh = event.target.files;
+      this.previewImages = Array.from(this.newRoom.hinh_anh).map((file) =>
         URL.createObjectURL(file)
       );
     },
 
-    // Đặt lại form về trạng thái ban đầu
-    resetForm() {
-      this.room = {
-        ten_phong: "",
-        loai_phong: "",
-        suc_chua: 0,
-        gia_theo_gio: 0,
-        mo_ta: "",
-        hinh_anh: [],
-      };
-      this.selectedFiles = [];
-      this.previewImages = [];
+    onFileChangeEdit(event) {
+      this.currentRoom.hinh_anh = event.target.files;
+      this.previewImages = Array.from(this.currentRoom.hinh_anh).map((file) =>
+        URL.createObjectURL(file)
+      );
     },
 
-    // Chuẩn bị sửa phòng
-    prepareEditRoom(room) {
-      this.room = { ...room };
-      this.isEditing = true;
-      this.editingRoomId = room._id;
-      this.showForm = true;
-    },
-
-    // Thêm phòng mới
-        // Thêm kiểm tra file trước khi gửi
     addRoom() {
-      if (!this.karaokeId) {
-        console.error("karaokeId is missing");
-        return;
-      }
-
-      if (this.selectedFiles.length === 0) {
+      if (this.newRoom.hinh_anh.length === 0) {
         alert("Vui lòng chọn ít nhất một tệp hình ảnh.");
         return;
       }
 
       const formData = new FormData();
-      Object.keys(this.room).forEach((key) => {
-        if (key !== "hinh_anh") formData.append(key, this.room[key]);
+      Object.keys(this.newRoom).forEach((key) => {
+        if (key !== "hinh_anh") formData.append(key, this.newRoom[key]);
       });
 
-      Array.from(this.selectedFiles).forEach((file) => {
+      Array.from(this.newRoom.hinh_anh).forEach((file) => {
         formData.append("hinh_anh", file);
       });
 
       axios
         .post(`http://localhost:8080/api/karaokes/${this.karaokeId}/phong`, formData)
-        .then((response) => {
-          this.fetchRooms();  // Cập nhật lại danh sách phòng
-          this.resetForm();  // Đặt lại form
-          this.showForm = false;
+        .then(() => {
+          this.fetchRooms();
+          this.resetForm();
           toast.success("Thêm phòng thành công");
         })
-        .catch((error) => {
-          if (error.response) {
-            console.error("Lỗi từ server:", error.response.data);
-            alert(`Lỗi khi thêm phòng: ${error.response.data.message || 'Không rõ'}`);
-          } else {
-            console.error("Lỗi không xác định:", error);
-            alert("Thêm phòng không thành công.");
-          }
+        .catch(() => {
+          alert("Thêm phòng không thành công.");
         });
     },
 
-  // Cập nhật phòng
-  updateRoom() {
-    if (!this.karaokeId || !this.editingRoomId) {
-      console.error("karaokeId or editingRoomId is missing");
-      return;
-    }
+    toggleEditMode(room) {
+      if (this.currentRoom._id === room._id && this.editMode) {
+        this.editMode = false;
+        this.resetForm();
+      } else {
+        this.currentRoom = { ...room };
+        this.editMode = true;
+      }
+    },
 
-    if (this.selectedFiles.length === 0) {
-      alert("Vui lòng chọn ít nhất một tệp hình ảnh.");
-      return;
-    }
-
-    const formData = new FormData();
-    Object.keys(this.room).forEach((key) => {
-      if (key !== "hinh_anh") formData.append(key, this.room[key]);
-    });
-
-    Array.from(this.selectedFiles).forEach((file) => {
-      formData.append("hinh_anh", file);
-    });
-
-    axios
-      .put(`http://localhost:8080/api/karaokes/${this.karaokeId}/phong/${this.editingRoomId}`, formData)
-      .then((response) => {
-        this.fetchRooms();  // Cập nhật lại danh sách phòng
-        this.resetForm();  // Đặt lại form
-        this.showForm = false;
-        this.isEditing = false;  // Dừng trạng thái chỉnh sửa
-        toast.success("Cập nhật phòng thành công!");
-
-      })
-      .catch((error) => {
-        console.error("Lỗi khi cập nhật phòng:", error.response ? error.response.data : error);
-        alert("Cập nhật phòng không thành công.");
+    updateRoom() {
+      const formData = new FormData();
+      Object.keys(this.currentRoom).forEach((key) => {
+        if (key !== "hinh_anh") formData.append(key, this.currentRoom[key]);
       });
-  },
 
+      if (this.currentRoom.hinh_anh.length > 0) {
+        Array.from(this.currentRoom.hinh_anh).forEach((file) => {
+          formData.append("hinh_anh", file);
+        });
+      }
 
+      axios
+        .put(`http://localhost:8080/api/karaokes/${this.karaokeId}/phong/${this.currentRoom._id}`, formData)
+        .then(() => {
+          this.fetchRooms();
+          this.resetForm();
+          this.editMode = false;
+          toast.success("Cập nhật phòng thành công");
+        })
+        .catch(() => {
+          alert("Cập nhật phòng không thành công.");
+        });
+    },
 
+    resetForm() {
+      this.newRoom = {
+        ten_phong: "",
+        loai_phong: "",
+        suc_chua: 0,
+        gia_theo_gio: 0,
+        mo_ta: "",
+        trang_thai:"",
+        hinh_anh: [],
+      };
+      this.previewImages = [];
+    },
 
-deleteRoom(roomId) {
-  if (!this.karaokeId) {
-    console.error("karaokeId is missing");
-    return;
-  }
+    deleteRoom(roomId) {
+      if (confirm("Bạn có chắc chắn muốn xóa phòng này?")) {
+        axios
+          .delete(`http://localhost:8080/api/karaokes/${this.karaokeId}/phong/${roomId}`)
+          .then(() => {
+            this.fetchRooms();
+            toast.success("Xóa phòng thành công");
+          })
+          .catch(() => {
+            alert("Xóa phòng không thành công.");
+          });
+      }
+    },
 
-  // Hiển thị thông báo xác nhận trước khi xóa
-  const isConfirmed = window.confirm("Bạn có chắc chắn muốn xóa phòng này?");
-
-  if (isConfirmed) {
-    axios
-      .delete(`http://localhost:8080/api/karaokes/${this.karaokeId}/phong/${roomId}`)
-      .then((response) => {
-        this.fetchRooms();  // Cập nhật lại danh sách phòng
-        toast.success("Xoá phòng thành công");
-      })
-      .catch((error) => {
-        console.error("Lỗi khi xóa phòng:", error);
-        alert("Xóa phòng không thành công.");
-      });
-  } else {
-    console.log("Xóa phòng bị hủy bỏ.");
-  }
-}
-
+    // Hàm để ẩn/hiện form thêm phòng
+    toggleForm() {
+      this.isFormVisible = !this.isFormVisible;
+    }
   },
 };
 </script>
 
+
 <style scoped>
-/* Cấu trúc chung */
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #f9f9f9;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-
-h1, h2, h3 {
-  color: #333;
-  text-align: center;
-}
-
-h1 {
-  font-size: 2.5rem;
-  margin-bottom: 20px;
-}
-
-h3 {
-  color: #555;
-}
-
-/* Form */
-form {
-  background: #ffffff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  max-width: 600px;
+/* Container chính */
+.container {
+  max-width: 1200px;
   margin: 0 auto;
-  transition: transform 0.3s ease;
+  padding: 20px;
+}
+
+/* Tiêu đề */
+h3 {
+  font-family: 'Roboto', sans-serif;
+  color: #333;
+  font-size: 24px;
+  text-align: center;
+  margin-bottom: 40px;
+  letter-spacing: 1px;
+}
+
+/* Form Thêm Phòng */
+form {
+  background-color: #f4f7fc;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  animation: slideIn 0.5s ease-out;
 }
 
 form input, form textarea, form button {
-  width: 95%;
-  margin-bottom: 15px;
+  width: 100%;
+  font-size: 16px;
   padding: 12px;
   border: 1px solid #ddd;
   border-radius: 8px;
-  font-size: 1rem;
-}
-
-form button {
-  background-color: #007bff;
-  color: #fff;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-form button:hover {
-  background-color: #0056b3;
+  background-color: #fff;
+  transition: all 0.3s ease;
 }
 
 form input:focus, form textarea:focus {
@@ -336,136 +318,423 @@ form input:focus, form textarea:focus {
   outline: none;
 }
 
-form textarea {
-  min-height: 100px;
-  resize: vertical;
+form input[type="file"] {
+  border: none;
+  padding: 0;
 }
 
-/* Preview Images */
+form textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.trangthai{
+  display: flex;
+}
+
+form button {
+  background-color: #007bff;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 20px;
+}
+
+form button:hover {
+  background-color: #0056b3;
+}
+
+form button:active {
+  transform: scale(0.98);
+}
+
 .preview-images {
   display: flex;
   gap: 10px;
+  margin-top: 15px;
   flex-wrap: wrap;
-  justify-content: center;
-}
-
-.preview-image {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  overflow: hidden;
-  border-radius: 8px;
 }
 
 .preview-image img {
-  width: 100%;
-  height: 100%;
+  width: 100px;
+  height: 100px;
   object-fit: cover;
+  border-radius: 5px;
+  transition: transform 0.3s ease;
 }
 
+.preview-image img:hover {
+  transform: scale(1.1);
+}
+
+/* Hiệu ứng khi form được hiện ra */
+@keyframes slideIn {
+  0% {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
 /* Danh sách phòng */
+.room-list {
+  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  justify-items: center;
+}
+
+/* Card phòng */
 .room-card {
-  background-color: #ffffff;
+  background-color: #fff;
   padding: 20px;
-  margin-bottom: 15px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+
+
+.room-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
 }
 
 .room-card h4 {
-  font-size: 1.5rem;
-  margin-bottom: 10px;
+  font-size: 20px;
   color: #333;
+  margin-bottom: 10px;
+  font-weight: bold;
 }
 
 .room-card p {
-  font-size: 1rem;
-  color: #666;
+  font-size: 16px;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+.room-card .button-container {
+  display: flex;
+  gap: 10px; /* Khoảng cách giữa các nút */
+  margin-top: 10px; /* Khoảng cách từ dưới nội dung phòng */
 }
 
 .room-card button {
-  background-color: #28a745;
+  background-color: #ff6347;
   color: white;
   border: none;
-  padding: 8px 15px;
-  border-radius: 4px;
-  margin-right: 8px;
+  padding: 10px 20px;
+  border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
 .room-card button:hover {
+  background-color: #e03e24;
+}
+
+
+.room-images img {
+  width: 120px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-right: 10px;
+  transition: transform 0.3s ease;
+}
+
+.room-images img:hover {
+  transform: scale(1.1);
+}
+
+/* Button Thêm Phòng */
+.add-room-button {
+  display: inline-block;
+  background-color: #28a745;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 5px;
+  font-size: 18px;
+  text-align: center;
+  margin-top: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-room-button:hover {
   background-color: #218838;
 }
 
-.room-card button:nth-child(2) {
-  background-color: #dc3545;
+.add-room-button:active {
+  transform: scale(0.98);
 }
 
-.room-card button:nth-child(2):hover {
-  background-color: #c82333;
+/* Đảm bảo responsive */
+@media (max-width: 1024px) {
+  .room-list {
+    grid-template-columns: repeat(2, 1fr); /* 2 cột trên một hàng với màn hình nhỏ hơn */
+  }
 }
 
-/* Flexbox cho các phòng */
+@media (max-width: 768px) {
+  .room-list {
+    grid-template-columns: 1fr; /* 1 cột trên một hàng với màn hình rất nhỏ */
+  }
+
+  .room-card {
+    margin-bottom: 15px;
+  }
+}
+
+/* Chung */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f7fb;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+h3 {
+  color: #333;
+  font-size: 24px;
+  font-weight: 600;
+  text-align: center;
+}
+
+h4 {
+  color: #333;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+h5 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+p {
+  color: #555;
+  font-size: 16px;
+}
+
+/* Card phòng */
+.room-card {
+  background-color: white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin: 20px 0;
+  border-radius: 8px;
+  transition: transform 0.3s;
+}
+
+.room-card:hover {
+  transform: translateY(-5px);
+}
+
 .room-images {
   display: flex;
-  gap: 10px;
+  gap: 15px;
   flex-wrap: wrap;
-  justify-content: center;
-  margin-top: 10px;
 }
 
 .room-image {
   width: 100px;
   height: 100px;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.room-image img {
-  width: 100%;
-  height: 100%;
   object-fit: cover;
+  border-radius: 8px;
 }
 
-/* Chỉnh sửa button Thêm/Sửa */
 button {
-  font-size: 1rem;
-  background-color: #ff6600;
+  background-color: #4CAF50;
+
   color: white;
+  padding: 8px 16px;
   border: none;
-  border-radius: 8px;
-  padding: 12px 18px;
+  border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  margin: 10px;
+  transition: background-color 0.3s;
 }
 
 button:hover {
-  background-color: #e55b00;
+  background-color: #45a049;
 }
 
-button:focus {
+/* Form Thêm và Sửa */
+form {
+  background-color: white;
+  padding: 20px;
+  margin-top: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+form input,
+form textarea {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  background-color: #fafafa;
+}
+
+form input[type="file"] {
+  padding: 10px;
+  background-color: #fff;
+}
+
+form button {
+  background-color: #008CBA;
+  padding: 12px 24px;
+  width: auto;
+  cursor: pointer;
+}
+
+form button:hover {
+  background-color: #007bb5;
+}
+
+/* Hiển thị Form */
+form {
+  background-color: white;
+  padding: 20px;
+  margin-top: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  display: block;  /* Đảm bảo form luôn hiển thị */
+}
+
+
+form.show {
+  display: block;
+}
+
+/* Preview hình ảnh */
+.preview-images {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.preview-image img {
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+/* Phần Danh sách */
+.room-list {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.room-list h3 {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.room-list .room-card {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.room-list .room-card h4 {
+  width: 100%;
+}
+
+/* Button toggle form */
+.toggle-btn {
+  background-color: #ff5722;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  margin-top: 20px;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.toggle-btn:hover {
+  background-color: #e64a19;
+}
+
+select {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+  font-size: 16px;
+}
+
+select:focus {
   outline: none;
+  border-color: #4caf50;
+  box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
 }
 
-button:active {
-  transform: scale(0.98);
+/* Thêm màu nền cho từng trạng thái */
+select option[value="trong"] {
+  background-color: #d4edda; /* Màu xanh nhạt */
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .room-images {
-    justify-content: flex-start;
-  }
-
-  form {
-    width: 100%;
-    padding: 15px;
-  }
-
-  .preview-image {
-    width: 80px;
-    height: 80px;
-  }
+select option[value="dang_su_dung"] {
+  background-color: #fff3cd; /* Màu vàng nhạt */
 }
+
+select option[value="can_bao_tri"] {
+  background-color: #f8d7da; /* Màu đỏ nhạt */
+}
+
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.pagination button {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.pagination button:hover {
+  background-color: #eaeaea;
+}
+
+.pagination button:disabled {
+  background-color: #ddd;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  font-size: 16px;
+}
+
+
+
 </style>
+
+

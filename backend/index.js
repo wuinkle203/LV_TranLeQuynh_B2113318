@@ -18,11 +18,10 @@ const thongBaoRoutes = require('./routes/thongBaoRoutes');
 
 // Cấu hình CORS
 app.use(cors({
-  origin: '*', // Bạn có thể thay đổi thành nguồn cụ thể nếu cần
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: 'http://localhost:3001', // Hoặc '*' để cho phép tất cả nguồn gốc
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // Thêm PATCH vào danh sách phương thức
+  allowedHeaders: ['Content-Type', 'Authorization'], // Đảm bảo các header được phép
 }));
-
 
 // Sử dụng middleware
 app.use(bodyParser.json());

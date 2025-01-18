@@ -3,8 +3,8 @@
     <h1>Quản lý quán Karaoke</h1>
     <!-- Menu điều hướng -->
     <div class="menu">
-      <button :class="{ active: activeComponent === 'KaraokeList' }" 
-              @click="setActiveComponent('KaraokeList')">
+      <button :class="{ active: activeComponent === 'ManageKaraokes' }" 
+              @click="setActiveComponent('ManageKaraokes')">
         Danh sách quán Karaoke
       </button>
       <button :class="{ active: activeComponent === 'AddKaraoke' }" 
@@ -15,8 +15,15 @@
               @click="setActiveComponent('ManagePromotions')">
         Quản lý khuyến mãi
       </button>
+      <button :class="{ active: activeComponent === 'ManageBookings' }" 
+              @click="setActiveComponent('ManageBookings')">
+        Quản lý đặt phòng
+      </button>
+      <button :class="{ active: activeComponent === 'BookingHistory' }" 
+              @click="setActiveComponent('BookingHistory')">
+        Lịch sử đặt phòng
+      </button>
     </div>
-
     <!-- Nội dung hiển thị -->
     <div class="content">
       <component 
@@ -31,24 +38,37 @@
   </div>
 </template>
 
+
 <script>
-import KaraokeList from "@/components/KaraokeList.vue";
+import ManageKaraokes from "@/components/ManageKaraokes.vue";
 import AddKaraoke from "@/components/AddKaraoke.vue";
 import ManagePromotions from "@/components/ManagePromotions.vue";
 import ManageRooms from "@/components/ManageRooms.vue";
+import ManageBookings from "@/components/ManageBookings.vue";
+import BookingHistory from "@/components/BookingHistory.vue";
 
 export default {
   components: {
-    KaraokeList,
+    ManageKaraokes,
     AddKaraoke,
     ManagePromotions,
     ManageRooms,
+    ManageBookings, 
+    BookingHistory, // Thêm BookingHistory
   },
   data() {
     return {
-      activeComponent: "KaraokeList", // Mặc định hiển thị danh sách quán karaoke
+      menuOpen: false,
+      activeComponent: "ManageKaraokes", // Mặc định hiển thị danh sách quán karaoke
       selectedKaraokeId: null, // Lưu id của quán karaoke được chọn
-      validComponents: ["KaraokeList", "AddKaraoke", "ManagePromotions", "ManageRooms"], // Các component hợp lệ
+      validComponents: [
+        "ManageKaraokes", 
+        "AddKaraoke", 
+        "ManagePromotions", 
+        "ManageRooms", 
+        "ManageBookings", 
+        "BookingHistory" // Thêm BookingHistory
+      ],
     };
   },
   methods: {
@@ -103,18 +123,22 @@ h1 {
   justify-content: center;
   gap: 20px;
   margin-bottom: 30px;
+  flex-wrap: wrap; /* Cho phép các nút bẻ xuống hàng nếu màn hình nhỏ */
 }
 
 .menu button {
-  background-color: #45a049;
+  background: linear-gradient(45deg, rgba(114, 153, 193, 0.8) 0%, rgba(44, 62, 80, 0.7) 100%);
   color: white;
   border: none;
   padding: 12px 25px;
   font-size: 16px;
   font-weight: bold;
-  border-radius: 8px;
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
   cursor: pointer;
+  border: 4px double;
   transition: background-color 0.3s ease, transform 0.2s ease;
+  margin-bottom: 10px; /* Thêm margin dưới mỗi nút */
 }
 
 .menu button:hover {
@@ -123,7 +147,7 @@ h1 {
 }
 
 .menu button.active {
-  background-color: #387c3f;
+  background-color: #080e15;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
@@ -152,6 +176,71 @@ h1 {
   font-size: 24px;
   margin-bottom: 15px;
   text-align: center;
+}
+
+/* Đảm bảo responsive */
+@media (max-width: 768px) {
+  /* Chỉnh sửa menu cho phù hợp với màn hình nhỏ */
+  .menu {
+    flex-direction: column;
+    align-items: center; /* Canh giữa các nút */
+  }
+
+  /* Nút khi ở trên màn hình nhỏ */
+  .menu button {
+    width: 100%; /* Các nút sẽ chiếm toàn bộ chiều rộng */
+    max-width: 300px; /* Giới hạn độ rộng tối đa */
+    padding: 15px;
+  }
+
+  /* Làm cho văn bản tiêu đề lớn hơn trong các màn hình nhỏ */
+  h1 {
+    font-size: 24px;
+  }
+  
+  /* Điều chỉnh padding và khoảng cách cho nội dung */
+  .owner-dashboard {
+    padding: 10px;
+  }
+}
+
+/* Responsive cho các màn hình rất nhỏ (ví dụ: điện thoại di động) */
+@media (max-width: 480px) {
+  /* Đảm bảo các button sẽ có kích thước dễ dàng bấm */
+  .menu button {
+    font-size: 14px; /* Giảm kích thước font chữ */
+    padding: 12px 20px;
+  }
+
+  .error-message {
+    font-size: 16px; /* Giảm kích thước font chữ thông báo lỗi */
+  }
+
+  .component-container h2 {
+    font-size: 20px; /* Giảm kích thước tiêu đề */
+  }
+}
+
+.hamburger-menu {
+  font-size: 30px;
+  color: white;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.close-menu {
+  font-size: 30px;
+  color: white;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.menu-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 </style>

@@ -36,7 +36,7 @@ export default {
   const user = JSON.parse(localStorage.getItem('user'));
   if (user && user.userId) {
     this.karaoke.chu_so_huu_id = user.userId;  // Gán userId cho chu_so_huu_id
-    console.log("User ID: ", this.karaoke.chu_so_huu_id);  // Kiểm tra giá trị userId
+    // console.log("User ID: ", this.karaoke.chu_so_huu_id);  // Kiểm tra giá trị userId
   } else {
     console.error("Không tìm thấy thông tin người dùng!");
   }

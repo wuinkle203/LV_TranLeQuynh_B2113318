@@ -14,7 +14,12 @@ const {
   addRoom,
   updateRoom,
   deleteRoom,
-  // uploadImage,
+  addPromotion,
+  updatePromotion,
+  deletePromotion,
+  getAllRooms,
+  getRoomDetails,
+  updateRoomStatus
 } = require('../controllers/karaokeController');
 
 // Quản lý quán karaoke
@@ -30,5 +35,14 @@ router.post('/:karaokeId/phong', upload.array('hinh_anh',10), addRoom); // Thêm
 router.put('/:karaokeId/phong/:phongId', upload.array('hinh_anh', 10), updateRoom);
 router.delete('/:karaokeId/phong/:phongId', deleteRoom);
 
+// Quản lý khuyến mãi
+router.post('/:karaokeId/promotions', addPromotion); // Thêm khuyến mãi
+router.put('/:karaokeId/promotions/:promotionId', updatePromotion); // Sửa khuyến mãi
+router.delete('/:karaokeId/promotions/:promotionId', deletePromotion); // Xóa khuyến mãi
+
+// Route lấy danh sách tất cả các phòng
+router.get('/rooms', getAllRooms);
+router.get('/:karaokeId/rooms/:roomId', getRoomDetails); //Thông tin chi tiết phòng
+router.patch('/:karaokeId/rooms/:roomId', updateRoomStatus); //Thông tin chi tiết phòng
 
 module.exports = router;

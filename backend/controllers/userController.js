@@ -41,12 +41,20 @@ exports.loginUser = async (req, res) => {
 // Đăng ký người dùng
 exports.registerUser = async (req, res) => {
   try {
-    const { email, mat_khau, ho_ten, user_name, so_dien_thoai, dia_chi, vai_tro } = req.body;
+    const {
+      email = null, // Nếu email không được gửi, đặt giá trị mặc định là null
+      mat_khau,
+      ho_ten = "",
+      user_name,
+      so_dien_thoai = "",
+      dia_chi = "",
+      vai_tro = "khach_hang",
+    } = req.body;
 
     // Kiểm tra xem người dùng đã tồn tại chưa
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ user_name });
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: "User already exists" });
     }
 
     // Tạo người dùng mới
@@ -57,7 +65,7 @@ exports.registerUser = async (req, res) => {
       user_name,
       so_dien_thoai,
       dia_chi,
-      vai_tro
+      vai_tro,
     });
 
     // Mã hóa mật khẩu trước khi lưu vào cơ sở dữ liệu
@@ -66,12 +74,15 @@ exports.registerUser = async (req, res) => {
 
     // Lưu người dùng vào cơ sở dữ liệu
     await newUser.save();
-    res.status(201).json({ message: 'User registered successfully' });
+    res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
-    console.error('Error registering user:', error);
-    res.status(500).json({ message: 'Error registering user', error });
+    console.error("Error registering user:", error);
+    res.status(500).json({ message: "Error registering user", error });
   }
 };
+
+
+
 
 // Lấy danh sách người dùng
 exports.getAllUsers = async (req, res) => {
@@ -141,3 +152,23 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// Lấy thông tin người dùng theo userId
+exports.getUserById = async (req, res) => {
+  try {
+    // Tìm người dùng theo userId
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'Người dùng không tồn tại' });
+    }
+
+    // Không trả về mật khẩu và các thông tin không cần thiết
+    const { mat_khau, ...userInfo } = user.toObject();
+    
+    res.status(200).json(userInfo);
+  } catch (error) {
+    res.status(500).json({ message: 'Đã xảy ra lỗi', error });
+  }
+};
+

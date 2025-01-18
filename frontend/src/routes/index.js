@@ -23,17 +23,31 @@ const routes = [
     meta: { title: 'Đăng Ký Tài Khoản' }  // Thêm title cho trang đăng ký tài khoản
   },
   {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../views/Profile.vue'),
+    meta: { title: 'Trang cá nhân' }  // Thêm title cho trang cá nhân người dùng
+  },
+  {
     path: '/rooms',
     name: 'Rooms',
     component: RoomListView,
     meta: { title: 'Danh Sách Phòng Karaoke' }  // Thêm title cho trang danh sách phòng
   },
   {
-    path: '/bookings',
+    path: '/bookings/:karaokeId/rooms/:roomId',
     name: 'Bookings',
     component: BookingView,
-    meta: { title: 'Quản Lý Đặt Phòng' }  // Thêm title cho trang đặt phòng
+    meta: { title: 'Quản Lý Đặt Phòng' }, // Thêm title cho trang đặt phòng
+    props: true, // Truyền tham số roomId vào component dưới dạng prop
   },
+    {
+      path: "/booking-history",
+      name: "BookingHistory",
+      component: () => import("@/views/BookingHistoryView.vue"),
+      meta: { title: "Lịch sử Đặt Phòng" },
+    },
+  
   // Route cho trang Owner (bảng điều khiển chủ quán)
   {
     path: "/owner",
@@ -76,6 +90,12 @@ const routes = [
         name: 'ManagePromotions',
         component: () => import("@/components/ManagePromotions.vue"), // Trang quản lý khuyến mãi
         meta: { title: 'Quản Lý Khuyến Mãi' }, // Title cho trang quản lý khuyến mãi
+      },
+      {
+        path: 'manage-bookings',
+        name: 'ManageBookings',
+        component: () => import("@/components/ManageBookings.vue"), // Trang quản lý khuyến mãi
+        meta: { title: 'Quản Lý Đặt Phòng' }, // Title cho trang quản lý khuyến mãi
       },
     ]
   },

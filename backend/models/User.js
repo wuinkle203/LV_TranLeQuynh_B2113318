@@ -9,13 +9,13 @@ const LichSuHoatDongSchema = new mongoose.Schema({
 
 // Schema cho người dùng
 const UserSchema = new mongoose.Schema({
-  ho_ten: String,
-  email: { type: String, unique: true, required: true },
+  ho_ten: { type: String, default: "" },
+  email: { type: String, default: "" },
   user_name: { type: String, required: true, unique: true, trim: true },
   mat_khau: { type: String, required: true },
-  so_dien_thoai: String,
-  dia_chi: String,
-  vai_tro: { type: String, enum: ['chu_quan', 'khach_hang'], required: true },
+  so_dien_thoai: { type: String, default: "" },
+  dia_chi: { type: String, default: "" },
+  vai_tro: { type: String, enum: ['chu_quan', 'khach_hang'], required: true},
   lich_su_hoat_dong: [LichSuHoatDongSchema]
 });
 
