@@ -49,31 +49,32 @@
   <!-- Hiển thị trạng thái tải -->
   <div v-if="loading" class="loading">Đang tải danh sách phòng...</div>
 
-  <!-- Hiển thị lỗi nếu có -->
-  <div v-if="error" class="error">{{ error }}</div>
+<!-- Hiển thị lỗi nếu có -->
+<div v-if="error" class="error">{{ error }}</div>
 
-  <!-- Danh sách các phòng -->
-  <div v-if="roomsToShow.length > 0" class="rooms-container">
-    <div v-for="(room, index) in roomsToShow" :key="index" class="room-card" @click="goToBookingView(room)">
-      <div class="room-images">
-        <img
-          v-for="(image, index) in room.hinh_anh"
-          :key="index"
-          :src="'http://localhost:8080/uploads/' + image"
-          alt="Room Image"
-          class="room-image"
-        />
-      </div>
-      <div class="room-info">
-        <h2>{{ room.ten_phong }} ({{ room.loai_phong }})</h2>
-        <p><strong>Quán:</strong> {{ room.ten_quan }}</p>
-        <p><strong>Địa chỉ:</strong> {{ room.dia_chi }}</p>
-        <p><strong>Sức chứa:</strong> {{ room.suc_chua }} người</p>
-        <p><strong>Giá theo giờ:</strong> {{ room.gia_theo_gio.toLocaleString() }} VND</p>
-        <p><strong>Trạng thái:</strong> Trống</p>
-      </div>
+<!-- Danh sách các phòng -->
+<div v-if="roomsToShow.length > 0" class="rooms-container">
+  <div v-for="(room, index) in roomsToShow" :key="index" class="room-card" @click="goToBookingView(room)">
+    <div class="room-images">
+      <!-- Hiển thị chỉ ảnh đầu tiên -->
+      <img
+        v-if="room.hinh_anh.length > 0"
+        :src="'http://localhost:8080/uploads/' + room.hinh_anh[0]"
+        alt="Room Image"
+        class="room-image"
+      />
+    </div>
+    <div class="room-info">
+      <h2>{{ room.ten_phong }} ({{ room.loai_phong }})</h2>
+      <p><strong>Quán:</strong> {{ room.ten_quan }}</p>
+      <p><strong>Địa chỉ:</strong> {{ room.dia_chi }}</p>
+      <p><strong>Sức chứa:</strong> {{ room.suc_chua }} người</p>
+      <p><strong>Giá theo giờ:</strong> {{ room.gia_theo_gio.toLocaleString() }} VND</p>
+      <p><strong>Trạng thái:</strong> Trống</p>
     </div>
   </div>
+</div>
+
 
   <!-- Hiển thị nếu không có phòng -->
   <div v-else-if="!loading && !error" class="no-data">Hiện tại không có phòng nào.</div>
@@ -89,6 +90,7 @@
 </template>
 
 
+
 <script>
 import axios from "axios";
 
@@ -96,71 +98,40 @@ export default {
   emits: ["routeChanged"],
   name: "RoomListView",
   data() {
-  return {
-    rooms: [], // Danh sách tất cả phòng
-    roomsToShow: [], // Dữ liệu hiển thị trên trang hiện tại
-    currentPage: 1, // Trang hiện tại
-    itemsPerPage: 8, // Số lượng phòng trên mỗi trang
-    loading: true, // Trạng thái tải
-    error: null, // Lỗi nếu có
-    searchKeyword: "", // Từ khóa tìm kiếm
-    filters: {
-      minPrice: null, // Giá thấp nhất
-      maxPrice: null, // Giá cao nhất
-      capacity: null, // Sức chứa tối thiểu
-      roomType: "", // Loại phòng
-    },
-  };
-},
-
+    return {
+      rooms: [], // Danh sách tất cả phòng
+      filteredRooms: [], // Lưu trữ các phòng đã lọc hoặc tìm kiếm
+      roomsToShow: [], // Dữ liệu hiển thị trên trang hiện tại
+      currentPage: 1, // Trang hiện tại
+      itemsPerPage: 8, // Số lượng phòng trên mỗi trang
+      loading: true, // Trạng thái tải
+      error: null, // Lỗi nếu có
+      searchKeyword: "", // Từ khóa tìm kiếm
+      filters: {
+        minPrice: null, // Giá thấp nhất
+        maxPrice: null, // Giá cao nhất
+        capacity: null, // Sức chứa tối thiểu
+        roomType: "", // Loại phòng
+      },
+    };
+  },
   computed: {
     totalPages() {
-      return Math.ceil(this.rooms.length / this.itemsPerPage);
+      return Math.ceil(this.filteredRooms.length / this.itemsPerPage);
     },
   },
-methods: {
-  searchRoomsByArea() {
-  let filteredRooms = this.rooms;
+  methods: {
+    searchRoomsByArea() {
+    // Nếu không có từ khóa tìm kiếm, hiển thị lại tất cả các phòng
+    let filteredRooms = [...this.rooms];
 
-  // Tìm kiếm theo địa chỉ
-  if (this.searchKeyword) {
-    filteredRooms = filteredRooms.filter((room) =>
-      room.dia_chi.toLowerCase().includes(this.searchKeyword.toLowerCase())
-    );
-  }
+    if (this.searchKeyword) {
+      filteredRooms = filteredRooms.filter((room) =>
+        room.dia_chi.toLowerCase().includes(this.searchKeyword.toLowerCase())
+      );
+    }
 
-  // Áp dụng các bộ lọc khác
-  if (this.filters.minPrice !== null) {
-    filteredRooms = filteredRooms.filter(
-      (room) => room.gia_theo_gio >= this.filters.minPrice
-    );
-  }
-  if (this.filters.maxPrice !== null) {
-    filteredRooms = filteredRooms.filter(
-      (room) => room.gia_theo_gio <= this.filters.maxPrice
-    );
-  }
-  if (this.filters.capacity !== null) {
-    filteredRooms = filteredRooms.filter(
-      (room) => room.suc_chua >= this.filters.capacity
-    );
-  }
-  if (this.filters.roomType) {
-    filteredRooms = filteredRooms.filter(
-      (room) => room.loai_phong === this.filters.roomType
-    );
-  }
-
-  // Cập nhật danh sách hiển thị
-  this.roomsToShow = filteredRooms.slice(0, this.itemsPerPage);
-  this.currentPage = 1; // Reset lại trang
-},
-
-  applyFilters() {
-    // Áp dụng lọc theo giá, sức chứa, và loại phòng
-    let filteredRooms = this.rooms;
-
-    // Lọc theo giá
+    // Áp dụng các bộ lọc khác
     if (this.filters.minPrice !== null) {
       filteredRooms = filteredRooms.filter(
         (room) => room.gia_theo_gio >= this.filters.minPrice
@@ -171,31 +142,78 @@ methods: {
         (room) => room.gia_theo_gio <= this.filters.maxPrice
       );
     }
-
-    // Lọc theo sức chứa
     if (this.filters.capacity !== null) {
       filteredRooms = filteredRooms.filter(
         (room) => room.suc_chua >= this.filters.capacity
       );
     }
-
-    // Lọc theo loại phòng
     if (this.filters.roomType) {
       filteredRooms = filteredRooms.filter(
         (room) => room.loai_phong === this.filters.roomType
       );
     }
 
-    // Cập nhật danh sách hiển thị
-    this.roomsToShow = filteredRooms.slice(0, this.itemsPerPage);
+    this.filteredRooms = filteredRooms; // Lưu trữ danh sách phòng đã lọc
+    this.updateRoomsToShow(); // Cập nhật dữ liệu hiển thị cho trang hiện tại
     this.currentPage = 1; // Reset lại trang
   },
+
+  applyFilters() {
+    let filteredRooms = [...this.rooms];
+
+    if (this.filters.minPrice !== null) {
+      filteredRooms = filteredRooms.filter(
+        (room) => room.gia_theo_gio >= this.filters.minPrice
+      );
+    }
+    if (this.filters.maxPrice !== null) {
+      filteredRooms = filteredRooms.filter(
+        (room) => room.gia_theo_gio <= this.filters.maxPrice
+      );
+    }
+    if (this.filters.capacity !== null) {
+      filteredRooms = filteredRooms.filter(
+        (room) => room.suc_chua >= this.filters.capacity
+      );
+    }
+    if (this.filters.roomType) {
+      filteredRooms = filteredRooms.filter(
+        (room) => room.loai_phong === this.filters.roomType
+      );
+    }
+
+    this.filteredRooms = filteredRooms; // Lưu trữ danh sách phòng đã lọc
+    this.updateRoomsToShow(); // Cập nhật dữ liệu hiển thị cho trang hiện tại
+    this.currentPage = 1; // Reset lại trang
+  },
+
+  updateRoomsToShow() {
+    const start = (this.currentPage - 1) * this.itemsPerPage;
+    const end = start + this.itemsPerPage;
+    this.roomsToShow = this.filteredRooms.slice(start, end); // Dùng filteredRooms thay vì rooms
+  },
+
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.updateRoomsToShow(); // Cập nhật lại danh sách phòng sau khi chuyển trang
+    }
+  },
+
+  prevPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.updateRoomsToShow(); // Cập nhật lại danh sách phòng sau khi chuyển trang
+    }
+  },
+
+  // Hàm tải dữ liệu phòng từ API
   async fetchRooms() {
     try {
-      const response = await axios.get("http://localhost:8080/api/karaokes/rooms"); // Đường dẫn API
+      const response = await axios.get("http://localhost:8080/api/karaokes/rooms");
       if (response.data.success) {
-        // Lọc các phòng có trạng thái "trống"
         this.rooms = response.data.data.filter((room) => room.trang_thai === "trong");
+        this.filteredRooms = this.rooms; // Ban đầu không lọc, lưu trữ tất cả phòng
         this.updateRoomsToShow(); // Cập nhật dữ liệu hiển thị cho trang đầu tiên
       } else {
         this.error = response.data.message || "Không thể tải danh sách phòng.";
@@ -207,46 +225,20 @@ methods: {
       this.loading = false;
     }
   },
-  updateRoomsToShow() {
-    const start = (this.currentPage - 1) * this.itemsPerPage;
-    const end = start + this.itemsPerPage;
-    this.roomsToShow = this.rooms.slice(start, end);
-  },
-  searchRoomsByArea() {
-    if (!this.searchKeyword) {
-      this.updateRoomsToShow(); // Hiển thị lại tất cả phòng nếu không có từ khóa
-      return;
-    }
 
-    const filteredRooms = this.rooms.filter((room) =>
-      room.dia_chi.toLowerCase().includes(this.searchKeyword.toLowerCase())
-    );
+    // Chuyển đến trang đặt phòng
+    goToBookingView(room) {
+      this.$router.push({ name: "Bookings", params: { karaokeId: room.karaoke_id, roomId: room._id } });
+    },
+  
 
-    this.roomsToShow = filteredRooms.slice(0, this.itemsPerPage); // Hiển thị kết quả tìm kiếm
-    this.currentPage = 1; // Reset lại trang
-  },
-  nextPage() {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-      this.updateRoomsToShow();
-    }
-  },
-  prevPage() {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-      this.updateRoomsToShow();
-    }
-  },
-  goToBookingView(room) {
-    this.$router.push({ name: "Bookings", params: { karaokeId: room.karaoke_id, roomId: room._id } });
-  },
 },
-
   mounted() {
     this.fetchRooms(); // Gọi API khi component được mount
   },
 };
 </script>
+
 
 <style scoped>
 .room-list-view {
@@ -421,19 +413,77 @@ h1 {
   background-color: #0056b3;
 }
 
+
 .filters {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin: 20px 0;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 20px;
+  justify-content: flex-start; /* Đảm bảo các phần tử không tràn ra */
+  align-items: center; /* Căn chỉnh các phần tử theo chiều dọc */
+  flex-wrap: nowrap; /* Không cho các phần tử nhảy xuống hàng */
+  overflow: hidden; /* Ẩn phần thừa nếu có */
 }
 
-.filters input,
-.filters select,
-.filters button {
-  padding: 5px 10px;
-  font-size: 16px;
+/* Tiêu đề */
+.filters label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  display: block;
+  margin-bottom: 5px;
 }
 
+/* Input field */
+.filters input[type="number"],
+.filters select {
+  width: auto; /* Tự động điều chỉnh chiều rộng */
+  min-width: 180px; /* Đảm bảo chiều rộng tối thiểu */
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  background-color: #f9f9f9;
+  transition: border-color 0.3s;
+  flex-grow: 1; /* Cho phép trường lọc giãn rộng ra đều */
+}
+
+.filters input[type="number"]:focus,
+.filters select:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+/* Button */
+.apply-filters-button {
+  background: #28a745;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.apply-filters-button:hover {
+  background: #218838;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .filters {
+    flex-direction: column;
+    align-items: stretch; /* Đảm bảo các phần tử không bị co lại */
+  }
+
+  .filters input[type="number"],
+  .filters select {
+    min-width: 100%; /* Các trường input, select chiếm toàn bộ chiều rộng */
+  }
+}
 
 </style>

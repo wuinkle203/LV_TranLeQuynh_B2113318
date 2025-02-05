@@ -1,6 +1,6 @@
 <template>
     <div class="container">
-      <h2>Quản lý Khuyến Mãi Cho Các Quán Karaoke</h2>
+      <h2>Quản lý Khuyến Mãi</h2>
   
       <!-- Danh sách quán karaoke -->
       <div v-if="karaokes.length">
@@ -191,7 +191,8 @@
   <style scoped>
   /* Container chính */
   .container {
-    max-width: 1000px;
+    /* max-width: 1000px; */
+    width: 90%;
     margin: 0 auto;
     padding: 40px 20px;
     background-color: #f4f4f9;

@@ -16,7 +16,7 @@
         
         <!-- Form chỉnh sửa quán karaoke -->
         <div v-if="isEditing && editingKaraoke._id === karaoke._id">
-          <form @submit.prevent="submitEdit(karaoke._id)">
+          <form @submit.prevent="submitEdit(karaoke._id)" enctype="multipart/form-data">
             <label for="ten_quan">Tên quán:</label>
             <input v-model="editingKaraoke.ten_quan" type="text" required />
             
@@ -26,6 +26,14 @@
             <label for="so_dien_thoai">Số điện thoại:</label>
             <input v-model="editingKaraoke.so_dien_thoai" type="text" required />
             
+            <label for="hinh_anh_quan">Hình ảnh mới:</label>
+            <input type="file" @change="onFileChange" />
+
+            <div v-if="editingKaraoke.hinh_anh_quan">
+              <h4>Hình ảnh hiện tại:</h4>
+              <img :src="`http://localhost:8080/uploads/${editingKaraoke.hinh_anh_quan}`" alt="Current Image" width="100" />
+            </div>
+
             <button type="submit">Lưu thay đổi</button>
             <button @click="cancelEdit">Hủy</button>
           </form>
@@ -36,6 +44,7 @@
   </div>
 </template>
 
+
 <script>
 import axios from "axios";
 
@@ -43,8 +52,9 @@ export default {
   data() {
     return {
       karaokes: [],
-      isEditing: false,  // Biến điều kiện để hiển thị form chỉnh sửa
-      editingKaraoke: null,  // Dữ liệu quán karaoke đang được chỉnh sửa
+      isEditing: false,
+      editingKaraoke: null,
+      newImage: null, // Để lưu trữ file hình ảnh mới
     };
   },
   async mounted() {
@@ -53,9 +63,8 @@ export default {
   methods: {
     async loadKaraokes() {
       try {
-        // Lấy userId từ localStorage (hoặc nơi bạn lưu thông tin người dùng)
         const userData = JSON.parse(localStorage.getItem('user'));
-        const userId = userData?.userId; // Đảm bảo userId đã được lưu
+        const userId = userData?.userId;
 
         if (!userId) {
           console.error('Người dùng chưa đăng nhập');
@@ -63,7 +72,7 @@ export default {
         }
 
         const response = await axios.get('http://localhost:8080/api/karaokes', {
-          params: { userId }  // Gửi userId theo query params
+          params: { userId }
         });
         this.karaokes = response.data;
       } catch (error) {
@@ -71,27 +80,41 @@ export default {
       }
     },
     selectKaraoke(karaokeId) {
-      if (!karaokeId) {
-        console.error("karaokeId không hợp lệ:", karaokeId);
-        return;
-      }
-      this.$emit("karaoke-selected", karaokeId); // Gửi lên cha
+      this.$emit("karaoke-selected", karaokeId);
     },
 
     editKaraoke(karaoke) {
       this.isEditing = true;
-      this.editingKaraoke = { ...karaoke }; // Sao chép dữ liệu của quán karaoke vào editingKaraoke
+      this.editingKaraoke = { ...karaoke };
     },
     cancelEdit() {
       this.isEditing = false;
       this.editingKaraoke = null;
+      this.newImage = null; // Reset hình ảnh mới
     },
-    async submitEdit(karaokeId) {
 
+    // Xử lý khi người dùng chọn ảnh mới
+    onFileChange(event) {
+      const file = event.target.files[0];
+      if (file) {
+        this.newImage = file;
+      }
+    },
+
+    async submitEdit(karaokeId) {
       try {
-        const response = await axios.put(`http://localhost:8080/api/karaokes/${karaokeId}`, {
-          ...this.editingKaraoke,
-          // chu_so_huu_id: userId, // Thêm trường này nếu backend yêu cầu
+        const formData = new FormData();
+        formData.append("ten_quan", this.editingKaraoke.ten_quan);
+        formData.append("dia_chi", this.editingKaraoke.dia_chi);
+        formData.append("so_dien_thoai", this.editingKaraoke.so_dien_thoai);
+        if (this.newImage) {
+          formData.append("hinh_anh_quan", this.newImage);
+        }
+
+        const response = await axios.put(`http://localhost:8080/api/karaokes/${karaokeId}`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data"
+          }
         });
 
         const index = this.karaokes.findIndex(karaoke => karaoke._id === karaokeId);
@@ -100,6 +123,7 @@ export default {
         }
         this.isEditing = false;
         this.editingKaraoke = null;
+        this.newImage = null;
         alert("Cập nhật quán karaoke thành công!");
         await this.loadKaraokes(); // Tải lại danh sách quán sau khi chỉnh sửa
       } catch (error) {
@@ -107,6 +131,7 @@ export default {
         alert("Có lỗi xảy ra khi cập nhật quán karaoke.");
       }
     },
+
     confirmDelete(karaokeId) {
       const isConfirmed = window.confirm("Bạn có chắc chắn muốn xoá quán karaoke này?");
       if (isConfirmed) {
@@ -114,12 +139,10 @@ export default {
       }
     },
 
-
-    
     async deleteKaraoke(karaokeId) {
       try {
         await axios.delete(`http://localhost:8080/api/karaokes/${karaokeId}`);
-        this.karaokes = this.karaokes.filter(karaoke => karaoke._id !== karaokeId); // Xoá quán khỏi danh sách
+        this.karaokes = this.karaokes.filter(karaoke => karaoke._id !== karaokeId);
         alert("Quán karaoke đã được xoá thành công!");
       } catch (error) {
         console.error("Lỗi khi xoá quán karaoke:", error.message);
@@ -132,131 +155,180 @@ export default {
 
 
 
+
 <style scoped>
-/* Danh sách quán karaoke */
-
-/* Điều chỉnh các nút trong thẻ li */
-button {
-  padding: 8px 16px;
-  background: linear-gradient(0deg, #2707dc 0%, #78aadc);
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.3s ease;
-  margin-left: 10px; /* Khoảng cách giữa các nút */
-  transition: transform 0.3s ease, background 0.3s ease;
+/* Tổng quan */
+div {
+  /* max-width: 900px; */
+  width: 90%;
+  margin: 20px auto;
+  padding: 20px;
+  font-family: 'Arial', sans-serif;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  color: #333;
 }
 
-button:hover {
-  background-color: #9baf9c;
-  transform: scale(1.1);
+h2 {
+  text-align: center;
+  color: #4a90e2;
+  margin-bottom: 20px;
+  font-size: 1.8rem;
 }
 
-/* Nút chỉnh sửa quán karaoke */
-button:nth-child(2) {
-  background: linear-gradient(45deg, #88e168 0%, #296a0d);
-  transition: transform 0.3s ease, background 0.3s ease;
-}
-
-button:nth-child(2):hover {
-  background-color: #e68900;
-  transform: scale(1.1);
-}
-
-/* Nút xoá quán karaoke */
-button:last-child {
-  background: linear-gradient(45deg, #dd0a0a 0%, #9d5f5f);
-  transition: transform 0.3s ease, background 0.3s ease;
-}
-
-button:last-child:hover {
-  background-color: #c62828;
-  transform: scale(1.1);
-}
-
+/* Danh sách quán */
 ul {
-  list-style-type: none;
+  list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #f9f9f9;
-  margin: 10px 0;
   padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.3s ease, transform 0.3s ease;
+  margin-bottom: 15px;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  transition: box-shadow 0.3s ease;
 }
 
 li:hover {
-  background-color: #f1f1f1;
-  transform: translateX(5px); /* Đẩy nhẹ sang phải khi hover */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
-/* Điều chỉnh các phần tử trong li */
-li span {
-  flex-grow: 1; /* Đẩy phần tử span (thông tin quán karaoke) chiếm không gian còn lại */
-  font-size: 16px;
-  color: #555;
+/* Thông tin quán */
+li div:first-child {
+  font-size: 1rem;
+  margin-bottom: 10px;
 }
 
-/* Form chỉnh sửa quán karaoke */
+/* Nhóm nút */
+.button-group {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+button {
+  padding: 8px 15px;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+button:active {
+  transform: scale(1);
+}
+
+button:first-child {
+  background: #4caf50;
+  color: #fff;
+}
+
+button:first-child:hover {
+  background: #45a049;
+}
+
+button:nth-child(2) {
+  background: #ffa500;
+  color: #fff;
+}
+
+button:nth-child(2):hover {
+  background: #e69500;
+}
+
+button:last-child {
+  background: #ff4d4d;
+  color: #fff;
+}
+
+button:last-child:hover {
+  background: #e63939;
+}
+
+/* Form chỉnh sửa */
 form {
-  margin-top: 20px;
+  margin-top: 15px;
   padding: 15px;
-  background-color: #f4f4f4;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  background: #f1f1f1;
+  border: 1px solid #ddd;
+  border-radius: 10px;
 }
 
 form label {
   display: block;
   margin-bottom: 5px;
   font-weight: bold;
+  color: #333;
 }
 
 form input {
   width: 100%;
-  padding: 8px;
-  margin-bottom: 10px;
+  padding: 10px;
+  font-size: 0.9rem;
   border: 1px solid #ccc;
-  border-radius: 4px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  transition: border-color 0.3s ease;
+}
+
+form input:focus {
+  border-color: #4a90e2;
+  outline: none;
 }
 
 form button {
-  background-color: #45a049;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  padding: 8px 16px;
-  cursor: pointer;
-}
-
-form button[type="submit"] {
+  padding: 10px 20px;
+  font-size: 0.9rem;
   margin-right: 10px;
 }
 
-form button:hover {
-  background-color: #388e3c;
+form button[type="submit"] {
+  background: #4a90e2;
+  color: #fff;
 }
 
-form button[type="button"] {
-  background-color: #e53935;
+form button[type="submit"]:hover {
+  background: #357abd;
 }
 
-form button[type="button"]:hover {
-  background-color: #c62828;
+form button:last-child {
+  background: #ccc;
 }
 
-/* Đảm bảo các nút không di chuyển */
-.button-group {
-  display: flex;
-  justify-content: flex-start;
-  gap: 10px; /* Khoảng cách giữa các nút */
+form button:last-child:hover {
+  background: #b3b3b3;
+}
+
+/* Khi không có quán */
+p {
+  text-align: center;
+  color: #999;
+  font-size: 1rem;
+  margin-top: 20px;
+}
+
+/* Hiệu ứng */
+div {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

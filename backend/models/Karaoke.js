@@ -26,6 +26,7 @@ const KaraokeSchema = new mongoose.Schema({
   dia_chi: String,
   so_dien_thoai: String,
   hinh_anh_quan: String,
+  so_phong_trong: Number,
   mo_ta: String,
   chu_so_huu_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   phong: [PhongSchema],

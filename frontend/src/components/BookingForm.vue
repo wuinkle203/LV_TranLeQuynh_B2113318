@@ -1,6 +1,5 @@
 <template>
   <div class="booking-container">
-
     <div class="booking-form">
       <h3>Đặt phòng</h3>
       <form @submit.prevent="submitBooking">
@@ -16,8 +15,8 @@
         <button type="submit">Đặt phòng</button>
       </form>
 
-      <!-- <div v-if="error" class="error">{{ error }}</div> -->
       <div v-if="successMessage" class="success">{{ successMessage }}</div>
+      <div v-if="error" class="error">{{ error }}</div>
     </div>
   </div>
 </template>
@@ -39,43 +38,57 @@ export default {
     };
   },
   methods: {
-
     async submitBooking() {
-        const userData = JSON.parse(localStorage.getItem('user'));
-        const userId = userData?.userId; // Lấy user_id từ localStorage
-      const karaokeId = this.$route.params.karaokeId; // Lấy karaoke_id từ URL params
+      const userData = JSON.parse(localStorage.getItem('user'));
+      const userId = userData?.userId; // Lấy user_id từ localStorage
 
-      const bookingData = {
-        name: this.name,
-        phone: this.phone,
-        thoi_gian_bat_dau: this.bookingTime,
-        phong_id: this.$route.params.roomId,  // Lấy roomId từ URL
-        karaoke_id: karaokeId,  // Gửi karaoke_id
-        nguoi_dung_id: userId,  // Gửi nguoi_dung_id
-      };
+      if (!userId) {
+        this.error = "Không tìm thấy thông tin người dùng!";
+        return;
+      }
 
       try {
-        // Gửi yêu cầu đặt phòng
-        const response = await axios.post("http://localhost:8080/api/datphongs", bookingData);
+        // Gửi yêu cầu lấy thông tin người dùng
+        const response = await axios.get(`http://localhost:8080/api/users/${userId}`);
+        const user = response.data;
+
+        // Kiểm tra nếu các thông tin bị thiếu
+        if (!user.ho_ten || !user.email || !user.so_dien_thoai || !user.dia_chi) {
+          this.error = "Vui lòng cập nhật đầy đủ thông tin cá nhân.";
+          // Chuyển hướng người dùng tới trang cập nhật thông tin
+          setTimeout(() => {
+            this.$router.push("/profile");
+          }, 1500);
+          return;
+        }
+
+        // Nếu thông tin hợp lệ, tiến hành đặt phòng
+        const karaokeId = this.$route.params.karaokeId; 
+        const bookingData = {
+          name: this.name,
+          phone: this.phone,
+          thoi_gian_bat_dau: this.bookingTime,
+          phong_id: this.$route.params.roomId,
+          karaoke_id: karaokeId,
+          nguoi_dung_id: userId,
+        };
+
+        const bookingResponse = await axios.post("http://localhost:8080/api/datphongs", bookingData);
         this.successMessage = "Đặt phòng thành công!";
         this.error = null;
 
-        // Gửi yêu cầu cập nhật trạng thái phòng
-        const karaokeId = this.$route.params.karaokeId; // Lấy karaokeId từ URL params
-        const roomId = this.$route.params.roomId;   
-        console.log('Karaoke ID:', this.$route.params.karaokeId);
-        console.log('Room ID:', this.$route.params.roomId);
-   // Lấy roomId từ URL params
+        // Cập nhật trạng thái phòng sau khi đặt
+        const roomId = this.$route.params.roomId;
         await axios.patch(`http://localhost:8080/api/karaokes/${karaokeId}/rooms/${roomId}`, {
-          trang_thai: "dang_su_dung", // Trạng thái cần cập nhật
+          trang_thai: "dang_su_dung",
         });
 
+        toast.success('Đặt phòng thành công', { autoClose: 800 });
 
-          toast.success('Đặt phòng thành công', {
-        autoClose: 800,
-        });
-          // Có thể sử dụng emit để thông báo cho parent component nếu cần
-          this.$emit("booking-success", response.data.data);
+        // Chuyển tới lịch sử đặt phòng
+        setTimeout(() => {
+          this.$router.push('/booking-history');
+        }, 800);
       } catch (err) {
         this.error = "Đã xảy ra lỗi khi đặt phòng.";
         this.successMessage = null;
@@ -85,6 +98,7 @@ export default {
   },
 };
 </script>
+
 
   
   

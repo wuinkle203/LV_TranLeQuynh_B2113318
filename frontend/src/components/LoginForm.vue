@@ -28,7 +28,6 @@ import axios from 'axios';
 import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
 import jwt_decode from 'jwt-decode';
-import { useId } from 'vue';
 
 
 
@@ -59,9 +58,10 @@ export default {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify({
       userId: decodedToken.userId,
-      user_name: decodedToken.user_name,  // Lấy user_name từ payload của token
-      ho_ten: decodedToken.ho_ten,  // Lấy ho_ten từ payload của token
-      isLoggedIn: true
+      // user_name: decodedToken.user_name,  // Lấy user_name từ payload của token
+      // ho_ten: decodedToken.ho_ten,  // Lấy ho_ten từ payload của token
+      isLoggedIn: true,
+      // vai_tro:decodedToken.vai_tro
     }));
 
     // Hiển thị thông báo thành công

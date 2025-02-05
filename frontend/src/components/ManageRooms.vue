@@ -27,27 +27,43 @@
     <!-- Danh sách Phòng -->
     <div v-if="rooms.length" class="room-list">
       <div v-for="room in paginatedRooms" :key="room._id" class="room-card">
-        <h4>{{ room.ten_phong }}</h4>
-        <p>Loại phòng: {{ room.loai_phong }}</p>
-        <p>Sức chứa: {{ room.suc_chua }}</p>
-        <p>Giá theo giờ: {{ room.gia_theo_gio }} VNĐ</p>
-        <p class="trangthai">
-          Trạng thái
-          <div v-if="room.trang_thai == 'trong'" class="trang_thai">: Phòng Trống</div>
-          <div v-if="room.trang_thai == 'dang_su_dung'" class="trang_thai"> Phòng Đã Được Đặt</div>
-          <div v-if="room.trang_thai == 'can_bao_tri'" class="trang_thai">: Phòng Đang Được Bảo Trì</div>
-        </p>
-        <p>Mô tả: {{ room.mo_ta }}</p>
-        <div v-if="room.hinh_anh && room.hinh_anh.length">
-          <h5>Hình ảnh phòng:</h5>
-          <div class="room-images">
-            <img v-for="(image, index) in room.hinh_anh" :key="index" :src="'http://localhost:8080/uploads/' + image" alt="Room Image" class="room-image" />
-          </div>
-        </div>
-        <div class="button-container">
-          <button @click="toggleEditMode(room)">Sửa</button>
-          <button @click="deleteRoom(room._id)">Xóa</button>
-        </div>
+  <h4>{{ room.ten_phong }}</h4>
+  <p>Loại phòng: {{ room.loai_phong }}</p>
+  <p>Sức chứa: {{ room.suc_chua }}</p>
+  <p>Giá theo giờ: {{ room.gia_theo_gio }} VNĐ</p>
+  <p class="trangthai">
+    Trạng thái
+    <div v-if="room.trang_thai == 'trong'" class="trang_thai">: Phòng Trống</div>
+    <div v-if="room.trang_thai == 'dang_su_dung'" class="trang_thai">: Phòng Đã Được Đặt</div>
+    <div v-if="room.trang_thai == 'can_bao_tri'" class="trang_thai">: Phòng Đang Được Bảo Trì</div>
+  </p>
+  <p>Mô tả: {{ room.mo_ta }}</p>
+
+  <div v-if="room.hinh_anh && room.hinh_anh.length">
+  <h5>Hình ảnh phòng:</h5>
+  <div class="room-images">
+    <!-- Hiển thị ảnh theo chỉ số của từng phòng -->
+    <div v-if="imageIndexes[room._id] >= 0 && imageIndexes[room._id] < room.hinh_anh.length">
+      <img 
+        :src="'http://localhost:8080/uploads/' + room.hinh_anh[imageIndexes[room._id]]" 
+        alt="Room Image" 
+        class="room-image" 
+      />
+    </div>
+  </div>
+  <!-- Điều hướng ảnh -->
+  <div class="image-navigation">
+    <button @click="prevImage(room)" :disabled="imageIndexes[room._id] <= 0"><</button>
+    <button @click="nextImage(room)" :disabled="imageIndexes[room._id] >= room.hinh_anh.length - 1">></button>
+  </div>
+</div>
+
+
+  <div class="button-container">
+    <button @click="toggleEditMode(room)">Sửa</button>
+    <button @click="deleteRoom(room._id)">Xóa</button>
+  </div>
+
         <div v-if="currentRoom._id === room._id && editMode">
           <h3>Sửa Phòng</h3>
           <form @submit.prevent="updateRoom">
@@ -71,16 +87,16 @@
           </form>
         </div>
       </div>
-            <!-- Điều hướng phân trang -->
-            <div class="pagination">
-              <button @click="prevPage" :disabled="currentPage === 1">Trang trước</button>
-              <span>Trang {{ currentPage }} / {{ totalPages }}</span>
-              <button @click="nextPage" :disabled="currentPage === totalPages">Trang sau</button>
-            </div>
     </div>
     
     <div v-else>
       <p>Chưa có phòng nào. Hãy thêm phòng mới!</p>
+    </div>
+          <!-- Điều hướng phân trang -->
+      <div class="pagination">
+      <button @click="prevPage" :disabled="currentPage === 1">Trang trước</button>
+      <span>Trang {{ currentPage }} / {{ totalPages }}</span>
+      <button @click="nextPage" :disabled="currentPage === totalPages">Trang sau</button>
     </div>
   </div>
 </template>
@@ -119,7 +135,9 @@ export default {
       itemsPerPage: 6, // Số lượng phòng trên mỗi trang
       previewImages: [],
       editMode: false,
-      isFormVisible: false, // Biến để kiểm soát hiển thị form thêm phòng
+      isFormVisible: false, 
+      currentImageIndex: 0, 
+      imageIndexes: {},// Biến để kiểm soát hiển thị form thêm phòng
     };
   },
   mounted() {
@@ -140,6 +158,28 @@ export default {
     },
   },
   methods: {
+
+  // Di chuyển đến ảnh trước
+  prevImage(room) {
+    if (this.imageIndexes[room._id] > 0) {
+      this.imageIndexes[room._id]--;
+    }
+  },
+
+  // Di chuyển đến ảnh sau
+  nextImage(room) {
+    if (this.imageIndexes[room._id] < room.hinh_anh.length - 1) {
+      this.imageIndexes[room._id]++;
+    }
+  },
+
+  
+  // Hàm để chuyển về ảnh đầu tiên khi cập nhật thông tin phòng
+  resetImageIndex() {
+    this.currentImageIndex = 0;
+  },
+  
+
     prevPage() {
     if (this.currentPage > 1) {
       this.currentPage--;
@@ -155,6 +195,10 @@ export default {
         .get(`http://localhost:8080/api/karaokes/${this.karaokeId}/phong`)
         .then((response) => {
           this.rooms = response.data.phong || [];
+                  // Khởi tạo giá trị chỉ số ảnh cho từng phòng
+        this.rooms.forEach(room => {
+          this.imageIndexes[room._id] = 0; // Mặc định hiển thị ảnh đầu tiên
+        });
         })
         .catch((error) => {
           alert("Không thể tải danh sách phòng.");
@@ -218,12 +262,22 @@ export default {
         if (key !== "hinh_anh") formData.append(key, this.currentRoom[key]);
       });
 
-      if (this.currentRoom.hinh_anh.length > 0) {
+      // Nếu không có hình ảnh mới, giữ lại hình ảnh cũ
+      if (this.currentRoom.hinh_anh.length === 0) {
+        if (this.currentRoom.hinh_anh_cu && this.currentRoom.hinh_anh_cu.length > 0) {
+          // Chuyển các hình ảnh cũ vào formData
+          this.currentRoom.hinh_anh_cu.forEach((file) => {
+            formData.append("hinh_anh", file);
+          });
+        }
+      } else {
+        // Nếu có hình ảnh mới, thêm các hình ảnh mới vào formData
         Array.from(this.currentRoom.hinh_anh).forEach((file) => {
           formData.append("hinh_anh", file);
         });
       }
 
+      // Gửi yêu cầu PUT với formData
       axios
         .put(`http://localhost:8080/api/karaokes/${this.karaokeId}/phong/${this.currentRoom._id}`, formData)
         .then(() => {
@@ -236,6 +290,8 @@ export default {
           alert("Cập nhật phòng không thành công.");
         });
     },
+
+
 
     resetForm() {
       this.newRoom = {
@@ -542,18 +598,56 @@ p {
   transform: translateY(-5px);
 }
 
+/* Style cho các ảnh phòng karaoke */
 .room-images {
   display: flex;
-  gap: 15px;
-  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  position: relative;
 }
 
+/* Hình ảnh phòng karaoke */
 .room-image {
-  width: 100px;
-  height: 100px;
-  object-fit: cover;
+  max-width: 100%;
+  height: auto;
   border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
 }
+
+.room-image:hover {
+  transform: scale(1.05);
+}
+
+/* Style cho nút điều hướng ảnh */
+.image-navigation {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+  width: 100%;
+}
+
+.image-navigation button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.image-navigation button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.image-navigation button:hover {
+  background-color: #45a049;
+}
+
 
 button {
   background-color: #4CAF50;
@@ -715,7 +809,7 @@ select option[value="can_bao_tri"] {
 .pagination button {
   padding: 8px 12px;
   border: 1px solid #ccc;
-  background-color: #f9f9f9;
+  background-color: #47b72b;
   cursor: pointer;
   transition: background-color 0.3s;
 }

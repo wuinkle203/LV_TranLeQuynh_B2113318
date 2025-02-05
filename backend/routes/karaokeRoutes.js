@@ -19,13 +19,14 @@ const {
   deletePromotion,
   getAllRooms,
   getRoomDetails,
-  updateRoomStatus
+  updateRoomStatus,
+  getKaraokes
 } = require('../controllers/karaokeController');
 
 // Quản lý quán karaoke
 router.get('/', getAllKaraokes);
-router.post('/', createKaraoke);
-router.put('/:id', updateKaraoke);
+router.post('/', upload.single("hinh_anh_quan"),createKaraoke);
+router.put('/:id', upload.single("hinh_anh_quan"), updateKaraoke);
 router.delete('/:id', deleteKaraoke);
 
 // Quản lý phòng karaoke
@@ -44,5 +45,7 @@ router.delete('/:karaokeId/promotions/:promotionId', deletePromotion); // Xóa k
 router.get('/rooms', getAllRooms);
 router.get('/:karaokeId/rooms/:roomId', getRoomDetails); //Thông tin chi tiết phòng
 router.patch('/:karaokeId/rooms/:roomId', updateRoomStatus); //Thông tin chi tiết phòng
+
+router.get('/all',getKaraokes);
 
 module.exports = router;

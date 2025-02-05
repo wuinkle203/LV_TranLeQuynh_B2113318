@@ -22,8 +22,9 @@ exports.loginUser = async (req, res) => {
     const token = jwt.sign(
       { 
         userId: user._id, 
-        user_name: user.user_name,
-        ho_ten: user.ho_ten // Thêm ho_ten vào token payload
+        // user_name: user.user_name,
+        // ho_ten: user.ho_ten,
+        // vai_tro: user.vai_tro // Thêm ho_ten vào token payload
       },
       process.env.JWT_SECRET || 'secretKey',
       { expiresIn: '1h' }
@@ -83,6 +84,69 @@ exports.registerUser = async (req, res) => {
 
 
 
+// Đổi mật khẩu người dùng
+exports.changePassword = async (req, res) => {
+  try {
+    // console.log("Params nhận được:", req.params);
+    // console.log("Body nhận được:", req.body);
+
+    const { id } = req.params; //  Sửa lại cách lấy id
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    //  Kiểm tra nhập đầy đủ mật khẩu
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ error: "Vui lòng nhập đầy đủ mật khẩu." });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: "Mật khẩu mới và xác nhận mật khẩu không khớp." });
+    }
+
+    // Tìm người dùng
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ error: "Người dùng không tồn tại." });
+    }
+
+    // console.log("Người dùng tìm thấy:", user.email);
+
+    // Kiểm tra mật khẩu hiện tại
+    const isMatch = await bcrypt.compare(currentPassword, user.mat_khau); // Sửa từ user.password thành user.mat_khau
+    if (!isMatch) {
+      return res.status(400).json({ error: "Mật khẩu hiện tại không đúng." });
+    }
+
+    // Hash mật khẩu mới
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Cập nhật mật khẩu
+    user.mat_khau = hashedPassword; //  Sửa từ user.password thành user.mat_khau
+    await user.save();
+
+    console.log("Mật khẩu đã thay đổi thành công.");
+    return res.status(200).json({ message: "Mật khẩu đã được thay đổi thành công!" });
+
+  } catch (error) {
+    console.error("Lỗi:", error);
+    return res.status(500).json({ error: "Đã xảy ra lỗi khi đổi mật khẩu." });
+  }
+};
+
+
+
+exports.checkUserName = async (req, res) => {
+  const { user_name } = req.body;
+  
+  try {
+    const existingUser = await User.findOne({ user_name });
+    if (existingUser) {
+      return res.json({ exists: true });
+    }
+    return res.json({ exists: false });
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi kiểm tra tên đăng nhập." });
+  }
+}
 
 // Lấy danh sách người dùng
 exports.getAllUsers = async (req, res) => {
@@ -94,50 +158,11 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-// Tạo người dùng mới
-exports.createUser = async (req, res) => {
-  const { email, user_name, mat_khau, ho_ten, so_dien_thoai, dia_chi, vai_tro } = req.body;
-
-  // Kiểm tra nếu email hoặc tên người dùng đã tồn tại
-  const existingEmail = await User.findOne({ email });
-  const existingUserName = await User.findOne({ user_name });
-
-  if (existingEmail) {
-    return res.status(400).json({ message: 'Email đã tồn tại' });
-  }
-  
-  if (existingUserName) {
-    return res.status(400).json({ message: 'Tên người dùng đã tồn tại' });
-  }
-
-  // Mã hóa mật khẩu
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(mat_khau, salt);
-
-  // Tạo người dùng mới
-  const user = new User({
-    email,
-    user_name,
-    mat_khau: hashedPassword,
-    ho_ten,
-    so_dien_thoai,
-    dia_chi,
-    vai_tro
-  });
-
-  try {
-    await user.save();
-    res.status(201).json({ message: 'User created successfully', user });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
 // Cập nhật thông tin người dùng
 exports.updateUser = async (req, res) => {
   try {
     const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.status(200).json({ message: 'User updated successfully', updatedUser });
+    res.status(200).json({ message: 'User updated successfully'});
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -1,27 +1,27 @@
 <template>
   <div class="owner-dashboard">
-    <h1>Quản lý quán Karaoke</h1>
+    <h1>TRANG QUẢN LÝ KARAOKE CỦA CHỦ QUÁN</h1>
     <!-- Menu điều hướng -->
     <div class="menu">
       <button :class="{ active: activeComponent === 'ManageKaraokes' }" 
               @click="setActiveComponent('ManageKaraokes')">
-        Danh sách quán Karaoke
+      QUÁN KARAOKE
       </button>
       <button :class="{ active: activeComponent === 'AddKaraoke' }" 
               @click="setActiveComponent('AddKaraoke')">
-        Thêm quán mới
+        THÊM QUÁN MỚI
       </button>
       <button :class="{ active: activeComponent === 'ManagePromotions' }" 
               @click="setActiveComponent('ManagePromotions')">
-        Quản lý khuyến mãi
+        QUẢN LÝ KHUYẾN MÃI
       </button>
       <button :class="{ active: activeComponent === 'ManageBookings' }" 
               @click="setActiveComponent('ManageBookings')">
-        Quản lý đặt phòng
+        QUẢN LÝ ĐẶT PHÒNG
       </button>
       <button :class="{ active: activeComponent === 'BookingHistory' }" 
               @click="setActiveComponent('BookingHistory')">
-        Lịch sử đặt phòng
+        LỊCH SỬ ĐẶT PHÒNG
       </button>
     </div>
     <!-- Nội dung hiển thị -->
@@ -105,8 +105,9 @@ export default {
   background-color: #f4f7fc;
   padding: 20px;
   border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  max-width: 1200px;
+  box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+  /* max-width: 1200px; */
+  width: 100%;
   margin: 30px auto;
 }
 
@@ -127,8 +128,8 @@ h1 {
 }
 
 .menu button {
-  background: linear-gradient(45deg, rgba(114, 153, 193, 0.8) 0%, rgba(44, 62, 80, 0.7) 100%);
-  color: white;
+  /* background: linear-gradient(45deg, rgba(114, 153, 193, 0.8) 0%, rgba(44, 62, 80, 0.7) 100%); */
+  color: rgb(0, 0, 0);
   border: none;
   padding: 12px 25px;
   font-size: 16px;
@@ -136,18 +137,18 @@ h1 {
   border-radius: 15px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
   cursor: pointer;
-  border: 4px double;
+  /* border: 4px double; */
   transition: background-color 0.3s ease, transform 0.2s ease;
   margin-bottom: 10px; /* Thêm margin dưới mỗi nút */
 }
 
 .menu button:hover {
-  background-color: #387c3f;
+  /* background-color: #387c3f; */
   transform: scale(1.05);
 }
 
 .menu button.active {
-  background-color: #080e15;
+  background: linear-gradient(45deg, rgba(114, 153, 193, 0.8) 0%, rgba(44, 62, 80, 0.7) 100%);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 

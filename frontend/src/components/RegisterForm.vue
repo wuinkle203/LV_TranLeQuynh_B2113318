@@ -14,6 +14,9 @@
             pattern="^[a-zA-Z0-9_]{5,20}$" 
             title="Tên đăng nhập phải có từ 5 đến 20 ký tự và chỉ chứa chữ cái, số hoặc dấu gạch dưới."
           />
+          <p v-if="user.user_name && !isValidUsername" class="error-text">
+            Tên đăng nhập phải có từ 5 đến 20 ký tự và chỉ chứa chữ cái, số hoặc dấu gạch dưới.
+          </p>
         </div>
 
         <div class="form-group">
@@ -34,6 +37,9 @@
               class="eye-icon"
             ></i>
           </div>
+          <p v-if="user.mat_khau && !isValidPassword" class="error-text">
+            Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ cái và số.
+          </p>
         </div>
 
         <div class="form-group">
@@ -52,6 +58,9 @@
               class="eye-icon"
             ></i>
           </div>
+          <p v-if="confirmPassword && confirmPassword !== user.mat_khau" class="error-text">
+            Mật khẩu xác nhận không khớp.
+          </p>
         </div>
 
         <button type="submit">Đăng Ký</button>
@@ -63,6 +72,7 @@
     </div>
   </div>
 </template>
+
 
 <script>
 import { toast } from 'vue3-toastify';
@@ -83,6 +93,17 @@ export default {
       successMessage: ''
     };
   },
+
+  computed: {
+    isValidUsername() {
+      const usernamePattern = /^[a-zA-Z0-9_]{5,20}$/;
+      return usernamePattern.test(this.user.user_name);
+    },
+    isValidPassword() {
+      const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+      return passwordPattern.test(this.user.mat_khau);
+    },
+  },
   methods: {
     togglePasswordVisibility() {
       this.showPassword = !this.showPassword;
@@ -91,14 +112,32 @@ export default {
       this.showConfirmPassword = !this.showConfirmPassword;
     },
     async submitForm() {
-      if (this.user.mat_khau !== this.confirmPassword) {
-        this.errorMessage = "Mật khẩu và xác nhận mật khẩu không khớp.";
-        toast.error(this.errorMessage);
+      if (!this.isValidUsername) {
+        this.errorMessage = "Tên đăng nhập không hợp lệ.";
+        return;
+      }
+      if (!this.isValidPassword) {
+        this.errorMessage = "Mật khẩu không hợp lệ.";
+        return;
+      }
+      if (this.confirmPassword !== this.user.mat_khau) {
+        this.errorMessage = "Mật khẩu xác nhận không khớp.";
         return;
       }
 
       try {
-        // Gửi yêu cầu đăng ký
+        // Kiểm tra xem tên đăng nhập đã tồn tại chưa
+        const checkUsernameResponse = await axios.post(
+          "http://localhost:8080/api/users/check-username", 
+          { user_name: this.user.user_name }
+        );
+
+        if (checkUsernameResponse.data.exists) {
+          this.errorMessage = "Tài khoản đã tồn tại.";
+          return;
+        }
+
+        // Nếu tên đăng nhập chưa tồn tại, tiếp tục gửi yêu cầu đăng ký
         const userData = {
           ...this.user,
           mat_khau: this.user.mat_khau || "",

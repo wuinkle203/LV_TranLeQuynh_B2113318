@@ -20,18 +20,24 @@ exports.getAllKaraokes = async (req, res) => {
 };
 
 
+// Hàm thêm quán karaoke
 exports.createKaraoke = async (req, res) => {
-  // console.log("Dữ liệu nhận được từ client:", req.body);  // Kiểm tra dữ liệu từ client
   try {
+    const { ten_quan, dia_chi, so_dien_thoai, chu_so_huu_id } = req.body;
+    const hinh_anh_quan = req.file ? req.file.filename : ""; // Lấy tên file ảnh
+
     const karaoke = new Karaoke({
-      ...req.body,
-      chu_so_huu_id: req.body.chu_so_huu_id || req.userId  // Lưu chu_so_huu_id từ request nếu có
+      ten_quan,
+      dia_chi,
+      so_dien_thoai,
+      chu_so_huu_id,
+      hinh_anh_quan,
     });
 
     await karaoke.save();
 
     res.status(201).json({
-      message: 'Karaoke created successfully',
+      message: "Karaoke created successfully",
       id: karaoke._id,
       karaoke,
     });
@@ -41,23 +47,57 @@ exports.createKaraoke = async (req, res) => {
 };
 
 
+
 // Cập nhật thông tin quán karaoke của người dùng hiện tại
+// exports.updateKaraoke = async (req, res) => {
+//   try {
+//     // Tìm quán karaoke của người dùng hiện tại
+//     const karaoke = await Karaoke.findOneAndUpdate(
+//       { _id: req.params.id},  // Chỉ tìm quán của người dùng hiện tại
+//       req.body,
+//       { new: true }  // Trả về quán karaoke đã cập nhật
+//     );
+
+//     if (!karaoke) {
+//       return res.status(404).json({ message: 'Quán karaoke không tìm thấy hoặc bạn không có quyền cập nhật' });
+//     }
+
+//     res.status(200).json({ message: 'Karaoke updated successfully', karaoke });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+
+
 exports.updateKaraoke = async (req, res) => {
   try {
-    // Tìm quán karaoke của người dùng hiện tại
-    const karaoke = await Karaoke.findOneAndUpdate(
-      { _id: req.params.id},  // Chỉ tìm quán của người dùng hiện tại
-      req.body,
-      { new: true }  // Trả về quán karaoke đã cập nhật
-    );
+    // Lấy hình ảnh mới từ request
+    const hinh_anh_moi = req.file ? req.file.filename : null;
+
+    // Tìm quán karaoke theo ID
+    const karaoke = await Karaoke.findById(req.params.id);
 
     if (!karaoke) {
-      return res.status(404).json({ message: 'Quán karaoke không tìm thấy hoặc bạn không có quyền cập nhật' });
+      return res.status(404).json({ message: "Quán karaoke không tìm thấy" });
     }
 
-    res.status(200).json({ message: 'Karaoke updated successfully', karaoke });
+    // Nếu có ảnh mới thì cập nhật, nếu không thì giữ nguyên ảnh cũ
+    const hinh_anh_quan = hinh_anh_moi || karaoke.hinh_anh_quan;
+
+    // Cập nhật thông tin quán karaoke
+    const updatedKaraoke = await Karaoke.findByIdAndUpdate(
+      req.params.id,
+      { ...req.body, hinh_anh_quan },
+      { new: true }
+    );
+
+    res.status(200).json({
+      message: "Cập nhật quán karaoke thành công!",
+      karaoke: updatedKaraoke,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Lỗi khi cập nhật quán karaoke:", error);
+    res.status(500).json({ message: "Lỗi khi cập nhật quán karaoke", error: error.message });
   }
 };
 
@@ -147,20 +187,51 @@ const updateRoomById = async (karaokeId, roomId, updateData) => {
 };
 
 
+const findRoomById = async (karaokeId, phongId) => {
+  try {
+    const karaoke = await Karaoke.findById(karaokeId);
+    if (!karaoke) {
+      throw new Error('Karaoke not found');
+    }
+
+    const room = karaoke.phong.id(phongId);
+    if (!room) {
+      throw new Error('Room not found');
+    }
+    return room;
+  } catch (error) {
+    console.error("Lỗi khi tìm phòng:", error);
+    throw error; // Ném lỗi để catch ở các nơi khác
+  }
+};
 
 // Sửa thông tin phòng karaoke
 exports.updateRoom = async (req, res) => {
   const { karaokeId, phongId } = req.params;
-  const { ten_phong, loai_phong, suc_chua, gia_theo_gio, mo_ta } = req.body;
-  const hinh_anh = req.files ? req.files.map(file => `${file.filename}`) : [];
+  const { ten_phong, loai_phong, suc_chua, gia_theo_gio, mo_ta, trang_thai } = req.body;
+  
+  // Lấy danh sách hình ảnh mới từ request
+  const hinh_anh_moi = req.files ? req.files.map(file => `${file.filename}`) : [];
 
   try {
+    // Tìm phòng trong cơ sở dữ liệu
+    const room = await findRoomById(karaokeId, phongId);
+
+    if (!room) {
+      return res.status(404).send({ message: "Không tìm thấy phòng." });
+    }
+
+    // Nếu không có hình ảnh mới, sử dụng hình ảnh cũ
+    const hinh_anh = hinh_anh_moi.length > 0 ? hinh_anh_moi : room.hinh_anh;
+
+    // Cập nhật thông tin phòng
     const updatedRoom = await updateRoomById(karaokeId, phongId, {
       ten_phong,
       loai_phong,
       suc_chua,
       gia_theo_gio,
       mo_ta,
+      trang_thai,
       hinh_anh
     });
 
@@ -316,19 +387,26 @@ exports.deletePromotion = async (req, res) => {
       return res.status(404).json({ message: 'Không tìm thấy quán karaoke!' });
     }
 
-    const promotion = karaoke.khuyen_mai.id(promotionId);
-    if (!promotion) {
+    // Tìm index của khuyến mãi trong mảng khuyến mãi
+    const promotionIndex = karaoke.khuyen_mai.findIndex(
+      (promotion) => promotion._id.toString() === promotionId
+    );
+
+    if (promotionIndex === -1) {
       return res.status(404).json({ message: 'Không tìm thấy khuyến mãi!' });
     }
 
-    promotion.remove(); // Xóa khuyến mãi
-    await karaoke.save();
+    // Xóa khuyến mãi tại vị trí index tìm được
+    karaoke.khuyen_mai.splice(promotionIndex, 1);
+    await karaoke.save(); // Lưu lại thay đổi
 
     res.status(200).json({ message: 'Xóa khuyến mãi thành công!' });
   } catch (error) {
+    console.error('Lỗi khi xóa khuyến mãi:', error);
     res.status(500).json({ message: 'Lỗi khi xóa khuyến mãi!', error: error.message });
   }
 };
+
 
 
 
@@ -433,5 +511,27 @@ exports.updateRoomStatus = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi cập nhật trạng thái phòng:", error);
     res.status(500).send({ message: "Lỗi khi cập nhật trạng thái phòng", error: error.message });
+  }
+};
+
+// Lấy tất cả các quán karaoke kèm số phòng trống
+exports.getKaraokes = async (req, res) => {
+  try {
+    // Lấy danh sách quán karaoke và populate khuyến mãi + phòng
+    const karaokes = await Karaoke.find().populate('khuyen_mai').populate('phong');
+
+    // Duyệt từng quán karaoke và tính số phòng trống
+    const karaokesWithRooms = karaokes.map(karaoke => {
+      const soPhongTrong = karaoke.phong.filter(p => p.trang_thai === 'trong').length;
+      return {
+        ...karaoke.toObject(),
+        so_phong_trong: soPhongTrong
+      };
+    });
+
+    // Trả về danh sách quán karaoke có thông tin số phòng trống
+    res.status(200).json(karaokesWithRooms);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

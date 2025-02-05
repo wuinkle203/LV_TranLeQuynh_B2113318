@@ -5,7 +5,7 @@
 
     <div v-if="room" class="room-detail">
       <button>
-        <<router-link to='/rooms'>Quay lại</router-link>
+        <router-link to='/rooms'>Quay lại</router-link>
       </button>
       <h2>{{ room.ten_phong }} ({{ room.loai_phong }})</h2>
       
@@ -13,8 +13,16 @@
       <p><strong>Quán:</strong> {{ room.ten_quan }}</p>
 
       <div class="room-images">
-        <img v-for="(image, index) in room.hinh_anh" :key="index" :src="'http://localhost:8080/uploads/' + image" alt="Room Image" class="room-image" />
+        <!-- Hiển thị ảnh theo chỉ số hiện tại -->
+        <img :src="'http://localhost:8080/uploads/' + room.hinh_anh[currentImageIndex]" alt="Room Image" class="room-image" />
       </div>
+
+      <!-- Nút điều hướng ảnh -->
+      <div class="image-navigation">
+        <button @click="prevImage" :disabled="currentImageIndex === 0">Ảnh trước</button>
+        <button @click="nextImage" :disabled="currentImageIndex === room.hinh_anh.length - 1">Ảnh sau</button>
+      </div>
+
       <p><strong>Sức chứa:</strong> {{ room.suc_chua }} người</p>
       <p><strong>Giá theo giờ:</strong> {{ room.gia_theo_gio.toLocaleString() }} VND</p>
       <p><strong>Mô tả:</strong> {{ room.mo_ta }}</p>
@@ -26,9 +34,59 @@
 
       <!-- Hiển thị form đặt phòng khi nút được nhấn -->
       <BookingForm v-if="isBookingFormVisible" @booking-success="handleBookingSuccess" />
+
+      <!-- Đánh giá -->
+      <div class="rating">
+        <p><strong>Đánh giá:</strong></p>
+        <div class="stars">
+          <span v-for="star in 5" :key="star" @click="setRating(star)" :class="{'selected': rating >= star}">&#9733;</span>
+        </div>
+        <p>Số sao: {{ rating }}</p>
+
+        <!-- Bình luận -->
+        <textarea v-model="comment" placeholder="Nhập bình luận của bạn"></textarea>
+        
+        <button @click="submitReview">Gửi đánh giá</button>
+
+        <!-- Hiển thị danh sách đánh giá -->
+        <div v-if="reviews.length > 0">
+          <div v-for="(review, index) in reviews" :key="index" class="review-item">
+            <p><strong>{{ review.nguoi_dung_id.ho_ten }}</strong> - {{ review.so_sao }} sao</p>
+            <p>{{ review.noi_dung }}</p>
+            <p><small>{{ new Date(review.ngay_danh_gia).toLocaleString() }}</small></p>
+            <button v-if="review.nguoi_dung_id._id === userId" @click="deleteDanhGia(review._id)">Xóa</button>
+              <!-- Nút phản hồi -->
+          <button @click="openReplyForm(review._id)">Phản hồi</button>
+
+          <!-- Form nhập phản hồi -->
+          <div v-if="replyForm.reviewId === review._id">
+            <textarea v-model="replyForm.noi_dung" placeholder="Nhập phản hồi..."></textarea>
+            <button @click="submitReply(review._id)">Gửi</button>
+          </div>
+
+                  <!-- Hiển thị danh sách phản hồi -->
+        <div v-if="replies[review._id] && replies[review._id].length > 0" class="replies">
+          <p><strong>Phản hồi:</strong></p>
+          <div v-for="reply in replies[review._id]" :key="reply._id" class="reply-item">
+            <p><strong>{{ reply.nguoi_dung_id.ho_ten }}</strong>: {{ reply.noi_dung }}</p>
+            <p><small>{{ new Date(reply.ngay_gui).toLocaleString() }}</small></p>
+            <!-- Chỉ hiển thị nút Xóa nếu người dùng là người đã gửi phản hồi này -->
+            <button v-if="reply.nguoi_dung_id._id === userId" @click="deleteReply(reply._id, review._id)">
+              Xóa
+            </button>
+          </div>
+        </div>
+
+          </div>
+        </div>
+        <div v-else>
+          <p>Chưa có đánh giá nào.</p>
+        </div>
+      </div>
     </div>
   </div>
 </template>
+
 
 <script>
 import axios from "axios";
@@ -44,13 +102,104 @@ export default {
       room: null,
       loading: true,
       error: null,
-      isBookingFormVisible: false, // Quản lý việc hiển thị form đặt phòng
+      isBookingFormVisible: false,
+      rating: 0,
+      comment: "",
+      reviews: [],
+      replies: {}, 
+      currentImageIndex: 0, // Chỉ số ảnh hiện tại
+      userId: null,
+      replyForm: {
+      reviewId: null,
+      noi_dung: "",// Lưu phản hồi theo từng đánh giá
+    } // ID người dùng hiện tại
     };
   },
   mounted() {
+    this.loadUserId();
     this.fetchRoomDetails();
+    this.fetchReviews();
   },
   methods: {
+    // Lấy thông tin userId từ localStorage
+    loadUserId() {
+      const userData = JSON.parse(localStorage.getItem("user"));
+      this.userId = userData?.userId || null;
+    },
+
+    openReplyForm(reviewId) {
+    this.replyForm.reviewId = reviewId;
+    this.replyForm.noi_dung = "";  // Reset nội dung phản hồi
+  },
+
+    async submitReply(reviewId) {
+    const userData = JSON.parse(localStorage.getItem("user"));
+    const userId = userData?.userId; // Lấy userId từ localStorage
+
+    if (!userId) {
+      alert("Vui lòng đăng nhập để phản hồi!");
+      return;
+    }
+
+    const replyData = {
+      danh_gia_id: reviewId,
+      noi_dung: this.replyForm.noi_dung,
+      nguoi_dung_id: userId, // Dùng userId từ localStorage
+    };
+
+    try {
+      const response = await axios.post(`http://localhost:8080/api/phanhois/${reviewId}`, replyData);
+      if (response.data.success) {
+        alert("Phản hồi thành công!");
+        this.fetchReviews(); // Cập nhật danh sách đánh giá
+        this.replyForm.reviewId = null; // Ẩn form sau khi gửi
+        this.replyForm.noi_dung = ""; // Xóa nội dung phản hồi
+      } else {
+        alert(response.data.message || "Không thể gửi phản hồi.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Đã xảy ra lỗi khi gửi phản hồi.");
+    }
+  },
+
+    async fetchReplies(reviewId) {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/phanhois/${reviewId}`);
+      if (response.data.success) {
+        // Kiểm tra nếu `this.replies` chưa tồn tại, khởi tạo nó
+        if (!this.replies) {
+          this.replies = {};
+        }
+        // Cập nhật phản hồi theo reviewId
+        this.replies[reviewId] = response.data.data;
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Lỗi khi tải phản hồi!");
+    }
+  },
+
+  async deleteReply(replyId, reviewId) {
+    if (!confirm("Bạn có chắc muốn xóa phản hồi này?")) return;
+
+    try {
+      const response = await axios.delete(`http://localhost:8080/api/phanhois/${replyId}`);
+
+      if (response.data.success) {
+        // Xóa phản hồi khỏi UI
+        this.replies[reviewId] = this.replies[reviewId].filter(reply => reply._id !== replyId);
+        alert("Xóa phản hồi thành công!");
+      } else {
+        alert("Xóa phản hồi thất bại.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Lỗi khi xóa phản hồi!");
+    }
+  },
+
+
     async fetchRoomDetails() {
       const { roomId, karaokeId } = this.$route.params;
       try {
@@ -61,18 +210,106 @@ export default {
           this.error = response.data.message || "Không thể tải thông tin phòng.";
         }
       } catch (err) {
-        this.error = "Đã xảy ra lỗi khi tải thông tin phòng.";
+        // this.error = "Đã xảy ra lỗi khi tải thông tin phòng.";
         console.error(err);
       } finally {
         this.loading = false;
       }
     },
+
+    // Xóa đánh giá theo reviewId
+    async deleteDanhGia(reviewId) {
+      try {
+        const response = await axios.delete(`http://localhost:8080/api/danhgias/${reviewId}`);
+        if (response.data.success) {
+          alert("Xóa đánh giá thành công!");
+          this.fetchReviews(); // Cập nhật lại danh sách sau khi xóa
+        } else {
+          alert("Không thể xóa đánh giá.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Đã xảy ra lỗi khi xóa đánh giá.");
+      }
+    },
+
+    async fetchReviews() {
+      const { roomId, karaokeId } = this.$route.params;
+      try {
+        const response = await axios.get(`http://localhost:8080/api/danhgias/${karaokeId}/rooms/${roomId}/reviews`);
+        
+        if (response.data.success) {
+          this.reviews = response.data.data;
+          
+          // Gọi API lấy phản hồi cho từng đánh giá
+          this.reviews.forEach(review => {
+            this.fetchReplies(review._id);
+          });
+        } else {
+          this.reviews = [];
+          this.error = "Không thể tải đánh giá.";
+        }
+      } catch (err) {
+        console.error(err);
+        this.reviews = [];
+      }
+    },
+
+
     toggleBookingForm() {
       this.isBookingFormVisible = !this.isBookingFormVisible; // Toggle hiển thị form đặt phòng
     },
+
     handleBookingSuccess(bookingData) {
-      // Xử lý khi đặt phòng thành công, ví dụ như lưu thông tin đặt phòng
       console.log("Đặt phòng thành công:", bookingData);
+    },
+
+    setRating(star) {
+      this.rating = star;
+    },
+
+    // Gửi đánh giá
+    async submitReview() {
+      if (this.rating === 0 || !this.comment) {
+        alert("Vui lòng chọn số sao và nhập bình luận.");
+        return;
+      }
+      const userData = JSON.parse(localStorage.getItem("user"));
+      const userId = userData?.userId;
+      const { roomId, karaokeId } = this.$route.params;
+      const reviewData = {
+        karaoke_id: karaokeId,
+        nguoi_dung_id: userId,
+        noi_dung: this.comment,
+        so_sao: this.rating,
+      };
+
+      try {
+        const response = await axios.post(`http://localhost:8080/api/danhgias/${karaokeId}/rooms/${roomId}/reviews`, reviewData);
+        if (response.data.success) {
+          alert("Đánh giá thành công!");
+          this.comment = "";
+          this.rating = 0;
+          this.fetchReviews(); // Cập nhật lại danh sách đánh giá sau khi gửi
+        } else {
+          alert("Không thể gửi đánh giá.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Đã xảy ra lỗi khi gửi đánh giá.");
+      }
+    },
+
+    prevImage() {
+      if (this.currentImageIndex > 0) {
+        this.currentImageIndex--;
+      }
+    },
+
+    nextImage() {
+      if (this.currentImageIndex < this.room.hinh_anh.length - 1) {
+        this.currentImageIndex++;
+      }
     },
   },
 };
@@ -82,157 +319,146 @@ export default {
 
 <style scoped>
 .booking-view {
-  max-width: 1000px;
+  font-family: Arial, sans-serif;
+  padding: 30px;
+}
+
+.loading, .error {
+  text-align: center;
+  font-size: 18px;
+  color: #f44336;
+}
+
+.room-detail {
+  /* max-width: 1000px; Tăng chiều rộng của khu vực chi tiết phòng */
+  width: 90%;
   margin: 0 auto;
-  padding: 20px;
-  background-color: #f9f9f9;
+  background-color: #fff;
+  padding: 30px; /* Tăng padding để nội dung thoải mái hơn */
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  font-family: 'Arial', sans-serif;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1); /* Tăng bóng đổ */
 }
 
-h1 {
-  font-size: 32px;
-  color: #2c3e50;
-  text-align: center;
-  margin-bottom: 30px;
+.room-detail h2 {
+  font-size: 28px; /* Tăng kích thước chữ tiêu đề */
+  color: #333;
 }
 
-h2 {
-  font-size: 28px;
-  color: #34495e;
+.room-detail p {
+  font-size: 18px; /* Tăng kích thước chữ thông tin phòng */
+  color: #555;
   margin-bottom: 15px;
-  font-weight: bold;
-}
-
-p {
-  font-size: 18px;
-  color: #7f8c8d;
-  margin: 8px 0;
-}
-
-strong {
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-.loading {
-  text-align: center;
-  font-size: 18px;
-  color: #3498db;
-}
-
-.error {
-  color: #e74c3c;
-  background-color: #f8d7da;
-  padding: 12px;
-  border-radius: 5px;
-  margin-top: 20px;
 }
 
 .room-images {
   display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  margin: 20px 0;
+  flex-wrap: wrap;
+  gap: 20px; /* Tăng khoảng cách giữa các hình ảnh */
+  justify-content: center;
 }
 
 .room-image {
-  width: 100%;
-  max-width: 250px;
-  height: auto;
+  width: 400px; /* Thiết lập chiều rộng cố định cho tất cả hình ảnh */
+  /* height: 200px; Thiết lập chiều cao cố định cho tất cả hình ảnh */
+  object-fit: cover; /* Đảm bảo hình ảnh không bị méo và phủ kín khung */
   border-radius: 8px;
-  object-fit: cover;
-  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease;
 }
 
-.room-image:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+.image-navigation {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 button {
-  background-color: #3498db;
+  background-color: #4CAF50;
   color: white;
-  padding: 15px 25px;
   border: none;
-  border-radius: 50px;
-  font-size: 18px;
+  padding: 12px 25px; /* Tăng kích thước nút */
   cursor: pointer;
-  text-align: center;
-  transition: background-color 0.3s, transform 0.2s;
-  margin: 20px auto;
-  display: block;
-  width: 200px;
+  border-radius: 5px;
+  margin: 15px 0;
 }
 
 button:hover {
-  background-color: #2980b9;
-  transform: translateY(-2px);
+  background-color: #45a049;
 }
 
-button:active {
-  transform: translateY(2px);
-}
-
-.booking-form {
-  background-color: #ffffff;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  margin-top: 30px;
-  text-align: center;
-}
-
-.booking-form input,
-.booking-form button {
-  width: 100%;
-  padding: 15px;
-  border-radius: 8px;
-  font-size: 16px;
-  margin-top: 15px;
-}
-
-.booking-form input {
-  border: 1px solid #ddd;
-}
-
-.booking-form input:focus {
-  border-color: #3498db;
+button:focus {
   outline: none;
 }
 
-.booking-form button {
-  background-color: #2ecc71;
+button a {
   color: white;
-  border: none;
-  transition: background-color 0.3s;
+  text-decoration: none;
 }
 
-.booking-form button:hover {
-  background-color: #27ae60;
+button a:hover {
+  text-decoration: underline;
 }
 
-.booking-form button:active {
-  background-color: #1e8449;
+.rating {
+  margin-top: 30px; /* Tăng khoảng cách giữa đánh giá và nội dung bên trên */
 }
 
-@media (max-width: 768px) {
-  .room-images {
-    flex-direction: column;
-    align-items: center;
-  }
+.stars {
+  display: flex;
+  gap: 8px; /* Tăng khoảng cách giữa các sao */
+}
 
-  .room-image {
-    max-width: 80%;
-  }
+.stars span {
+  font-size: 28px; /* Tăng kích thước các sao */
+  color: #f0f0f0;
+  cursor: pointer;
+}
 
-  button {
-    width: 100%;
-  }
+.stars span.selected {
+  color: #ffb400;
+}
+
+textarea {
+  width: 100%;
+  height: 120px; /* Tăng chiều cao của textarea */
+  padding: 12px;
+  margin-top: 15px; /* Tăng khoảng cách với phần trên */
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 18px; /* Tăng kích thước chữ trong textarea */
+  resize: none;
+}
+
+.review-item {
+  padding: 20px; /* Tăng padding để đánh giá thoải mái hơn */
+  border: 1px solid #ddd;
+  margin-top: 20px; /* Tăng khoảng cách giữa các đánh giá */
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.review-item p {
+  margin: 8px 0;
+}
+
+.review-item small {
+  color: #888;
+}
+
+.no-reviews {
+  text-align: center;
+  color: #888;
+}
+
+.booking-form {
+  margin-top: 25px; /* Tăng khoảng cách với các phần trên */
+  padding: 20px; /* Tăng padding */
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 </style>

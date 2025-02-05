@@ -30,7 +30,7 @@ exports.getAllDatPhongs = async (req, res) => {
 
     // Lấy tất cả đặt phòng của quán karaoke
     const bookings = await DatPhong.find(query)
-      .populate('karaoke_id', 'ten_quan dia_chi') // Lấy thông tin quán karaoke
+      .populate('karaoke_id', 'ten_quan dia_chi khuyen_mai') // Lấy thông tin quán karaoke + khuyến mãi
       .populate('nguoi_dung_id', 'ho_ten') // Lấy thông tin người dùng
       .exec();
 
@@ -39,17 +39,26 @@ exports.getAllDatPhongs = async (req, res) => {
     }
 
     // Lọc và ghép thông tin phòng từ mảng 'phong' trong Karaoke
-    const bookingDetails = await Promise.all(bookings.map(async (booking) => {
-      // Lấy thông tin quán karaoke tương ứng với booking
-      const karaoke = await Karaoke.findById(booking.karaoke_id);
-      const phong = karaoke.phong.find(p => p._id.toString() === booking.phong_id.toString()); // Lọc phòng từ mảng 'phong' của quán karaoke
+    const bookingDetails = await Promise.all(
+      bookings.map(async (booking) => {
+        // Lấy thông tin quán karaoke tương ứng với booking
+        const karaoke = await Karaoke.findById(booking.karaoke_id);
+        const phong = karaoke.phong.find(
+          (p) => p._id.toString() === booking.phong_id.toString()
+        ); // Lọc phòng từ mảng 'phong' của quán karaoke
 
-      return {
-        ...booking.toObject(),
-        karaoke_info: karaoke, // Thông tin quán karaoke
-        phong_info: phong,     // Thông tin phòng
-      };
-    }));
+        return {
+          ...booking.toObject(),
+          karaoke_info: {
+            ten_quan: karaoke.ten_quan,
+            dia_chi: karaoke.dia_chi,
+            khuyen_mai: karaoke.khuyen_mai, // Thêm thông tin khuyến mãi
+          },
+          phong_info: phong, // Thông tin phòng
+        };
+      })
+    );
+
     res.status(200).json(bookingDetails);
   } catch (error) {
     console.error('Lỗi khi lấy danh sách đặt phòng:', error);
@@ -77,7 +86,7 @@ exports.createDatPhong = async (req, res) => {
   }
 };
 
-// Cập nhật đặt phòng (cho phép cập nhật trạng thái, ghi chú và thời gian bắt đầu)
+
 exports.updateDatPhong = async (req, res) => {
   const { id } = req.params;
 
@@ -89,33 +98,72 @@ exports.updateDatPhong = async (req, res) => {
     }
 
     // Danh sách các trường cho phép cập nhật
-    const allowedUpdates = ["trang_thai", "ghi_chu", "thoi_gian_bat_dau"];
+    const allowedUpdates = ["trang_thai", "ghi_chu", "thoi_gian_bat_dau", "thoi_gian_ket_thuc", "tong_tien"];
     const updates = Object.keys(req.body).filter((key) =>
       allowedUpdates.includes(key)
     );
 
     // Cập nhật các trường hợp lệ
     updates.forEach((update) => {
-      if (update === "thoi_gian_bat_dau") {
-        // Kiểm tra giá trị hợp lệ cho thoi_gian_bat_dau (nếu cần)
-        const newStartTime = new Date(req.body[update]);
-        if (isNaN(newStartTime.getTime())) {
-          throw new Error("Thời gian bắt đầu không hợp lệ");
+      if (update === "thoi_gian_bat_dau" || update === "thoi_gian_ket_thuc") {
+        // Kiểm tra giá trị hợp lệ cho thời gian (bắt đầu hoặc kết thúc)
+        const newTime = new Date(req.body[update]);
+        if (isNaN(newTime.getTime())) {
+          throw new Error(`${update} không hợp lệ`);
         }
-        datPhong[update] = newStartTime;
-      } else {
+        datPhong[update] = newTime;
+      }
+      else {
         datPhong[update] = req.body[update];
       }
     });
 
+    // Lưu lại thông tin đã cập nhật
     await datPhong.save();
 
-    res.status(200).json({ message: "Cập nhật đặt phòng thành công", datPhong });
+    res.status(200).json({
+      message: "Cập nhật đặt phòng thành công",
+      datPhong,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Lỗi khi cập nhật đặt phòng:", error);
+    res.status(400).send({ message: error.message });
   }
 };
 
+
+exports.updateTongTien = async(req, res) => {
+  try {
+    const { id } = req.params; // Lấy ID từ URL
+    const { tong_tien } = req.body; // Lấy tổng tiền từ body
+
+    // Kiểm tra nếu không có tổng tiền
+    if (tong_tien == null || isNaN(tong_tien)) {
+      return res.status(400).json({ message: 'Tổng tiền không hợp lệ.' });
+    }
+
+    // Tìm và cập nhật tài liệu
+    const updatedDatPhong = await DatPhong.findByIdAndUpdate(
+      id,
+      { tong_tien }, // Cập nhật tổng tiền
+      { new: true }  // Trả về dữ liệu đã cập nhật
+    );
+
+    // Kiểm tra nếu không tìm thấy tài liệu
+    if (!updatedDatPhong) {
+      return res.status(404).json({ message: 'Không tìm thấy đặt phòng.' });
+    }
+
+    // Phản hồi thành công
+    res.status(200).json({
+      message: 'Cập nhật tổng tiền thành công.',
+      data: updatedDatPhong,
+    });
+  } catch (error) {
+    console.error('Lỗi khi cập nhật tổng tiền:', error);
+    res.status(500).json({ message: 'Lỗi server.', error });
+  }
+}
 
 // Xóa đặt phòng (chỉ chủ quán liên quan mới có thể xóa)
 exports.deleteDatPhong = async (req, res) => {

@@ -1,6 +1,6 @@
 <template>
   <div class="booking-history">
-    <h2>Lịch sử Đặt Phòng</h2>
+    <h2>Lịch Sử Đặt Phòng</h2>
 
     <div v-if="karaokes.length">
       <div v-for="karaoke in karaokes" :key="karaoke._id" class="karaoke-card">
@@ -15,7 +15,12 @@
             <div v-for="datPhong in datPhongs" :key="datPhong._id" class="dat-phong-card">
               <p>{{ datPhong.phong_info?.ten_phong || "Phòng không có thông tin" }}</p>
               <p>Khách hàng: {{ datPhong.nguoi_dung_id?.ho_ten || "Chưa có người dùng" }}</p>
-              <p>Trạng thái: {{ datPhong.trang_thai }}</p>
+              <p class="trangthai">
+                Trạng thái
+                <span v-if="datPhong.trang_thai === 'da_hoan_thanh'" class="trang-thai-cho">: Đã Hoàn Thành</span>
+                <span v-if="datPhong.trang_thai === 'da_huy'" class="trang-thai-duyet">: Đã Huỷ</span>
+                <!-- <span v-if="datPhong.trang_thai === 'da_hoan_thanh'" class="trang-thai-hoan-thanh">: Đã xong</span> -->
+              </p>
               <p>
                 Thời gian: Từ {{ formatDate(datPhong.thoi_gian_bat_dau) }}
                 đến {{ formatDate(datPhong.thoi_gian_ket_thuc) }}
@@ -64,15 +69,15 @@ export default {
       }
     },
     async fetchDatPhongs(karaokeId) {
-        // Nếu danh sách đang hiển thị, ấn lần nữa để ẩn đi
-        if (this.currentKaraokeId === karaokeId) {
-          this.currentKaraokeId = null; // Đặt lại ID karaoke
-          this.datPhongs = []; // Xóa danh sách đặt phòng
-          return;
-        }
+      // Nếu danh sách đang hiển thị, ấn lần nữa để ẩn đi
+      if (this.currentKaraokeId === karaokeId) {
+        this.currentKaraokeId = null; // Đặt lại ID karaoke
+        this.datPhongs = []; // Xóa danh sách đặt phòng
+        return;
+      }
 
-        // Nếu chưa hiển thị, tải danh sách đặt phòng
-        this.currentKaraokeId = karaokeId;
+      // Nếu chưa hiển thị, tải danh sách đặt phòng
+      this.currentKaraokeId = karaokeId;
 
       try {
         const response = await axios.get("http://localhost:8080/api/datphongs", {
@@ -101,6 +106,7 @@ export default {
       if (!value) return "0 VND";
       return value.toLocaleString("vi-VN", { style: "currency", currency: "VND" });
     },
+
   },
   created() {
     this.fetchKaraokes();
@@ -108,18 +114,111 @@ export default {
 };
 </script>
 
+
 <style scoped>
-.karaoke-card {
-  margin-bottom: 20px;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+/* Tổng thể */
+.booking-history {
+  font-family: 'Poppins', sans-serif;
+  margin: 20px auto;
+  /* max-width: 900px; */
+  width: 90%;
+  padding: 20px;
+  background: #f4f4f9;
+  border-radius: 10px;
+  color: #333;
+  border: 1px solid #ddd;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
-.dat-phong-card {
+
+/* Tiêu đề chính */
+.booking-history h2 {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #333;
+  font-weight: 600;
+}
+
+/* Card quán karaoke */
+.karaoke-card {
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.karaoke-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.karaoke-card h4 {
+  font-size: 20px;
+  color: #333;
+}
+
+.karaoke-card p {
+  font-size: 14px;
+  color: #555;
+  margin: 5px 0;
+}
+
+/* Nút xem lịch sử đặt phòng */
+.karaoke-card button {
+  background: #007bff;
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 14px;
   margin-top: 10px;
-  padding: 10px;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.karaoke-card button:hover {
+  background: #0056b3;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Card đặt phòng */
+.dat-phong-card {
+  background: #ffffff;
   border: 1px solid #ddd;
   border-radius: 5px;
-  background: #f9f9f9;
+  padding: 15px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.dat-phong-card p {
+  margin: 5px 0;
+  font-size: 14px;
+  color: #555;
+}
+
+/* Trạng thái */
+.dat-phong-card p span {
+  font-weight: bold;
+}
+
+.dat-phong-card .trang-thai-hoan-thanh {
+  color: #28a745; /* Màu xanh lá */
+}
+
+.dat-phong-card .trang-thai-huy {
+  color: #dc3545; /* Màu đỏ */
+}
+
+/* Không có dữ liệu */
+p {
+  font-size: 14px;
+  color: #555;
+  text-align: center;
+  font-weight: bold;
 }
 </style>

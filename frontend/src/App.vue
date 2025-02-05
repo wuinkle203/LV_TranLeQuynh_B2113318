@@ -9,7 +9,7 @@
     <router-view @route-changed="checkRoute"></router-view>
     
     <!-- Ẩn Footer nếu là trang đăng ký hoặc trang đăng nhập -->
-    <Footer v-if="!isAuthPage && !isHomePage" />
+    <Footer v-if="!isAuthPage || !isHomePage" />
   </div>
 </template>
 

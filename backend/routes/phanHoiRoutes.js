@@ -1,9 +1,9 @@
 const express = require('express');
-const { getAllPhanHois, createPhanHoi, deletePhanHoi } = require('../controllers/phanHoiController');
+const { addReply, getReplys , deleteReply} = require('../controllers/phanHoiController');
 const router = express.Router();
 
-router.get('/', getAllPhanHois);
-router.post('/', createPhanHoi);
-router.delete('/:id', deletePhanHoi);
+router.post('/:reviewId', addReply);
+router.get('/:danhGiaId', getReplys);
+router.delete('/:replyId',deleteReply);
 
 module.exports = router;

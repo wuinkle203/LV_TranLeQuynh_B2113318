@@ -1,5 +1,5 @@
 <template>
-  <div :class="['header-container', { 'transparent-header': isHomeView }]">
+  <div class="header-container">
     <!-- Logo -->
     <div class="logo">
       <img src="D:/Computer Science/HK2-Nam4/LuanVanTotNghiep/Karaoke/frontend/src/image/logo-removebg.png" alt="Logo" height="60px" />
@@ -54,31 +54,52 @@ export default {
       this.isDropdownVisible = !this.isDropdownVisible;
     },
     logout() {
-      localStorage.removeItem('user');
+      localStorage.removeItem('user'); // Xóa thông tin người dùng trong localStorage
       this.isLoggedIn = false;
       this.ho_ten = '';
       this.isDropdownVisible = false;
-      this.$router.push('/');
+      this.$router.push('/'); // Quay về trang chủ
     },
-    updateUserInfo() {
-      const userData = JSON.parse(localStorage.getItem('user'));
-      if (userData && userData.isLoggedIn) {
-        this.isLoggedIn = true;
-        this.ho_ten = userData.ho_ten || 'Người dùng';
+    async updateUserInfo() {
+      const userData = JSON.parse(localStorage.getItem('user')); // Lấy userId từ localStorage
+      if (userData && userData.userId) {
+        try {
+          const response = await this.getUserById(userData.userId);
+          if (response && response.data) {
+            this.isLoggedIn = true;
+            this.ho_ten = response.data.ho_ten || 'Người dùng'; // Cập nhật tên người dùng
+          } else {
+            this.isLoggedIn = false;
+            this.ho_ten = '';
+          }
+        } catch (error) {
+          console.error('Không thể lấy thông tin người dùng:', error);
+          this.isLoggedIn = false;
+          this.ho_ten = '';
+        }
       } else {
         this.isLoggedIn = false;
         this.ho_ten = '';
       }
     },
+    async getUserById(userId) {
+      return fetch(`http://localhost:8080/api/users/${userId}`)
+        .then((response) => response.json())
+        .then((data) => ({ data }));
+    },
   },
   mounted() {
-    this.updateUserInfo();
+    this.updateUserInfo(); // Cập nhật thông tin người dùng khi trang được tải
   },
   watch: {
-    $route: 'updateUserInfo',
+    $route: 'updateUserInfo', // Theo dõi thay đổi route để cập nhật lại thông tin người dùng
   },
 };
 </script>
+
+
+
+
 
 <style scoped>
 /* Nền mặc định */
