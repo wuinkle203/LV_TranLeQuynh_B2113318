@@ -3,14 +3,14 @@
     <!-- Thông tin liên hệ -->
     <div class="footer-item contact-info">
       <h3>Thông tin liên hệ</h3>
-      <p><strong>Điện thoại:</strong> (+84) 123 456 789</p>
-      <p><strong>Email:</strong> info@karaokeclub.com</p>
-      <p><strong>Địa chỉ:</strong> 123 Đường ABC, TP. Hồ Chí Minh, Việt Nam</p>
+      <p><strong>Điện thoại:</strong> (+84) 779884200</p>
+      <p><strong>Email:</strong> quynhB2113318@student.ctu.edu.vn</p>
+      <p><strong>Địa chỉ: </strong>ĐHCT, Khu II, Đường 3/2, P. Xuân Khánh, Q. Ninh Kiều, TP. Cần Thơ</p>
     </div>
 
     <!-- Bản quyền -->
     <div class="footer-item copyright">
-      <p>&copy; 2025 Karaoke Club. All Rights Reserved.</p>
+      <p>&copy; 2025 Karaoke LVTN. All Rights Reserved.</p>
     </div>
 
     <!-- Google Maps (Đại học Cần Thơ) -->

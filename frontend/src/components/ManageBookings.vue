@@ -62,6 +62,15 @@
                   Đã Trả Phòng
                 </button>
               </div>
+
+             <!-- Nếu đang ở trạng thái "cho_xac_nhan", hiển thị MenuComponent -->
+             <menu-component
+                v-if="datPhong.trang_thai === 'da_xac_nhan'"
+                :karaoke-id="karaoke._id"
+                :room-id="datPhong.phong_info._id"
+                :datPhongId="datPhong._id"  
+              />
+              
             </div>
           </div>
           <p v-else>Không có đơn đặt phòng phù hợp.</p>
@@ -76,8 +85,12 @@
 
 <script>
 import axios from "axios";
+import MenuComponent from './MenuComponent.vue';
 
 export default {
+  components: {
+    MenuComponent
+  },
   data() {
     return {
       karaokes: [], // Danh sách quán karaoke
@@ -194,74 +207,141 @@ export default {
 
     async calculateTotal(datPhong) {
       try {
-        // Kiểm tra dữ liệu cơ bản
         if (
           !datPhong.thoi_gian_bat_dau ||
           !datPhong.thoi_gian_ket_thuc ||
           !datPhong.phong_info?.gia_theo_gio
         ) {
-          return 0; // Nếu thiếu dữ liệu trả về 0
+          return 0;
         }
 
-        // Chuyển đổi thời gian sang timestamp
-        const startTime = new Date(datPhong.thoi_gian_bat_dau).getTime();
-        const endTime = new Date(datPhong.thoi_gian_ket_thuc).getTime();
+        const startTime = new Date(datPhong.thoi_gian_bat_dau);
+        const endTime = new Date(datPhong.thoi_gian_ket_thuc);
 
-        // Kiểm tra tính hợp lệ của thời gian
-        if (isNaN(startTime) || isNaN(endTime) || startTime >= endTime) {
-          console.error("Thời gian không hợp lệ:", {
+        // Danh sách giá theo giờ
+        const danhSachGiaTheoGio = [];
+        let currentTime = new Date(startTime);
+        let total = 0;
+
+        if (isNaN(startTime.getTime()) || isNaN(endTime.getTime()) || startTime >= endTime) {
+          console.error("❌ Thời gian không hợp lệ:", {
             thoi_gian_bat_dau: datPhong.thoi_gian_bat_dau,
             thoi_gian_ket_thuc: datPhong.thoi_gian_ket_thuc,
           });
           return 0;
         }
 
-        // Kiểm tra giá theo giờ
-        const giaTheoGio = parseFloat(datPhong.phong_info.gia_theo_gio);
-        if (isNaN(giaTheoGio) || giaTheoGio <= 0) {
-          console.error("Giá theo giờ không hợp lệ:", datPhong.phong_info.gia_theo_gio);
-          return 0;
+        const giaTheoGioList = datPhong.phong_info.gia_theo_gio;
+        console.log("📌 Danh sách giá theo giờ:", giaTheoGioList);
+        console.log("⏳ Thời gian bắt đầu:", startTime);
+        console.log("⏳ Thời gian kết thúc:", endTime);
+
+        // 🔹 Chuyển đổi "hh:mm" thành số thực, nhưng xử lý giờ qua ngày mới
+        const parseTime = (timeString) => {
+          const [hours, minutes] = timeString.split(":").map(Number);
+          return hours * 60 + minutes; // Chuyển về phút
+        };
+
+        // Tính tiền phòng
+        while (currentTime < endTime) {
+          const gioHienTai = currentTime.getHours() * 60 + currentTime.getMinutes(); // Chuyển về phút
+
+          // 🔍 Tìm mức giá phù hợp
+          let giaHienTai = null;
+          for (const gia of giaTheoGioList) {
+            let gioBatDau = parseTime(gia.gio_bat_dau);
+            let gioKetThuc = parseTime(gia.gio_ket_thuc);
+
+            // Xử lý nếu giờ kết thúc < giờ bắt đầu (qua ngày mới)
+            if (gioKetThuc <= gioBatDau) {
+              gioKetThuc += 24 * 60;
+              if (gioHienTai < gioBatDau) gioHienTai += 24 * 60;
+            }
+
+            if (gioHienTai >= gioBatDau && gioHienTai < gioKetThuc) {
+              giaHienTai = gia.gia;
+              console.log(`✅ Áp dụng giá: ${giaHienTai} cho thời gian ${currentTime}`);
+              // Lưu vào danh_sach_gia_theo_gio
+              break;
+            }
+          }
+
+          if (giaHienTai === null) {
+            console.error("❌ Không tìm thấy mức giá phù hợp cho thời gian:", currentTime);
+            return 0;
+          }
+
+          // 🔢 Tính thời gian sử dụng trong khoảng giá này
+          let gioTiepTheo = endTime; // Mặc định là hết giờ đặt
+          for (const gia of giaTheoGioList) {
+            let gioBatDau = parseTime(gia.gio_bat_dau);
+            if (gioBatDau > gioHienTai) {
+              gioTiepTheo = new Date(currentTime);
+              gioTiepTheo.setHours(Math.floor(gioBatDau / 60), gioBatDau % 60, 0, 0);
+              break;
+            }
+          }
+
+          const timeToCharge = Math.min((gioTiepTheo - currentTime) / 3600000, (endTime - currentTime) / 3600000);
+          total += timeToCharge * giaHienTai;
+          
+          danhSachGiaTheoGio.push({
+                gio_bat_dau: currentTime,
+                gio_ket_thuc: gioTiepTheo,
+                gia_theo_gio: giaHienTai,
+                so_gio: timeToCharge,
+              });
+          console.log(`🕒 Thời gian tính tiền phòng: ${timeToCharge.toFixed(2)} giờ, Tiền: ${timeToCharge * giaHienTai}`);
+
+          currentTime = new Date(gioTiepTheo);
         }
 
-        // Tính thời gian chênh lệch (phút)
-        const durationInMinutes = (endTime - startTime) / (1000 * 60);
+        // 🔹 Cộng thêm tiền các món ăn trong danh sách
+        if (datPhong.danh_sach_mon_an && datPhong.danh_sach_mon_an.length > 0) {
+          datPhong.danh_sach_mon_an.forEach((monAn) => {
+            const thanhTienMonAn = monAn.so_luong * monAn.don_gia;
+            total += thanhTienMonAn;
+            console.log(`🍔 Thêm tiền món ăn: ${monAn.ten} - Số lượng: ${monAn.so_luong} x Đơn giá: ${monAn.don_gia} = ${thanhTienMonAn}`);
+          });
+        }
 
-        // Tính tổng tiền cơ bản
-        let total = (durationInMinutes / 60) * giaTheoGio; // Chuyển phút sang giờ
-
-        // Kiểm tra khuyến mãi
+        // 🎁 Kiểm tra khuyến mãi
         if (datPhong.karaoke_info?.khuyen_mai?.length > 0) {
-          let maxDiscount = 0; // Lưu trữ giá trị giảm giá lớn nhất
+          let maxDiscount = 0;
 
           datPhong.karaoke_info.khuyen_mai.forEach((km) => {
             const kmStart = new Date(km.ngay_bat_dau).getTime();
             const kmEnd = new Date(km.ngay_ket_thuc).getTime();
 
-            // Nếu thời gian kết thúc nằm trong khoảng khuyến mãi
-            if (endTime >= kmStart && endTime <= kmEnd) {
-              maxDiscount = Math.max(maxDiscount, km.gia_giam); // Lấy giảm giá lớn nhất
+            if (endTime.getTime() >= kmStart && endTime.getTime() <= kmEnd) {
+              maxDiscount = Math.max(maxDiscount, km.gia_giam);
             }
           });
 
-          // Áp dụng giảm giá lớn nhất (nếu có)
           if (maxDiscount > 0) {
-            total *= 1 - (maxDiscount / 100);
+            console.log(`🎉 Áp dụng khuyến mãi: Giảm ${maxDiscount}%`);
+            total *= 1 - maxDiscount / 100;
           }
         }
 
-        total = Math.max(0, total); // Đảm bảo giá trị không âm
+        total = Math.max(0, total);
+        console.log(`💰 Tổng tiền: ${total.toFixed(2)} VND`);
 
-        // Gọi API để cập nhật tổng tiền vào cơ sở dữ liệu
+        // 🔄 Cập nhật vào database
         await axios.put(`http://localhost:8080/api/datphongs/tongtien/${datPhong._id}`, {
           tong_tien: total,
+          danh_sach_gia_theo_gio: danhSachGiaTheoGio,  // Lưu danh sách giá theo giờ vào cơ sở dữ liệu
         });
 
         return total;
       } catch (error) {
-        console.error("Lỗi khi tính tổng tiền:", error);
-        return 0; // Trả về 0 nếu xảy ra lỗi
+        console.error("🚨 Lỗi khi tính tổng tiền:", error);
+        return 0;
       }
-    }
+    },
+
+
+
 
 
 
@@ -276,7 +356,7 @@ export default {
 <style scoped>
 /* Phong cách tổng thể */
 .container {
-  font-family: Arial, sans-serif;
+  font-weight: bold;
   margin: 20px auto;
   /* max-width: 900px; */
   width: 90%;
@@ -312,7 +392,9 @@ h2 {
 
 .karaoke-card h4 {
   font-size: 20px;
-  color: #4CAF50;
+  /* color: #4CAF50; */
+  font-weight: bold;
+  color: blue;
 }
 
 .karaoke-card p {
@@ -322,7 +404,7 @@ h2 {
 }
 
 .karaoke-card button {
-  background-color: #4CAF50;
+  background-color: #435D76;
   color: #fff;
   border: none;
   padding: 8px 16px;
@@ -333,7 +415,7 @@ h2 {
 }
 
 .karaoke-card button:hover {
-  background-color: #45a049;
+  background-color: rgba(114, 153, 193, 0.8);
 }
 
 /* Danh sách đặt phòng */

@@ -39,62 +39,125 @@ export default {
   },
   methods: {
     async submitBooking() {
-      const userData = JSON.parse(localStorage.getItem('user'));
-      const userId = userData?.userId; // Lấy user_id từ localStorage
+  const userData = JSON.parse(localStorage.getItem('user'));
+  const userId = userData?.userId;
 
-      if (!userId) {
-        this.error = "Không tìm thấy thông tin người dùng!";
-        return;
-      }
+  if (!userId) {
+    this.error = "Không tìm thấy thông tin người dùng!";
+    toast.error('Vui lòng đăng nhập để đặt phòng', { autoClose: 800 });
+    setTimeout(() => {
+      this.$router.push('/login');
+    }, 1500);
+    return;
+  }
 
-      try {
-        // Gửi yêu cầu lấy thông tin người dùng
-        const response = await axios.get(`http://localhost:8080/api/users/${userId}`);
-        const user = response.data;
+  try {
+    const response = await axios.get(`http://localhost:8080/api/users/${userId}`);
+    const user = response.data;
 
-        // Kiểm tra nếu các thông tin bị thiếu
-        if (!user.ho_ten || !user.email || !user.so_dien_thoai || !user.dia_chi) {
-          this.error = "Vui lòng cập nhật đầy đủ thông tin cá nhân.";
-          // Chuyển hướng người dùng tới trang cập nhật thông tin
-          setTimeout(() => {
-            this.$router.push("/profile");
-          }, 1500);
-          return;
+    if (!user.ho_ten || !user.email || !user.so_dien_thoai || !user.dia_chi) {
+      this.error = "Vui lòng cập nhật đầy đủ thông tin cá nhân.";
+      setTimeout(() => {
+        this.$router.push("/profile");
+      }, 1500);
+      return;
+    }
+
+    const karaokeId = this.$route.params.karaokeId;
+    const roomId = this.$route.params.roomId;
+
+    // Lấy thông tin phòng
+    const roomResponse = await axios.get(`http://localhost:8080/api/karaokes/${karaokeId}/rooms/${roomId}`);
+    const room = roomResponse.data;
+
+    console.log("Dữ liệu phòng:", room);
+    console.log("Gia theo gio:", room?.data?.gia_theo_gio);
+
+    if (!Array.isArray(room?.data?.gia_theo_gio)) {
+      console.error("Khung giờ phòng không hợp lệ hoặc không có dữ liệu khung giờ.");
+      return;
+    }
+
+    // Kiểm tra xem thời gian đặt có nằm trong các khoảng giá theo giờ không
+    const bookingTime = new Date(this.bookingTime);  // Thời gian đặt phòng
+    let isTimeValid = false;
+
+    // Chuyển đổi giờ đặt phòng thành giờ trong ngày
+    const bookingHour = bookingTime.getHours();
+    const bookingMinute = bookingTime.getMinutes();
+
+    for (const timeSlot of room?.data?.gia_theo_gio) {
+      const startTimeParts = timeSlot.gio_bat_dau.split(':');
+      const endTimeParts = timeSlot.gio_ket_thuc.split(':');
+
+      const startHour = parseInt(startTimeParts[0], 10);
+      const startMinute = parseInt(startTimeParts[1], 10);
+      const endHour = parseInt(endTimeParts[0], 10);
+      const endMinute = parseInt(endTimeParts[1], 10);
+
+      console.log("Khung giờ:", timeSlot.gio_bat_dau, "-", timeSlot.gio_ket_thuc);
+      console.log("So sánh:", bookingHour, ":", bookingMinute, "với", startHour, ":", startMinute, "và", endHour, ":", endMinute);
+
+      // Xử lý trường hợp khung giờ qua đêm
+      if (startHour > endHour || (startHour === endHour && startMinute > endMinute)) {
+        // Khung giờ qua đêm, chia làm hai phần
+        if (
+          (bookingHour > startHour || (bookingHour === startHour && bookingMinute >= startMinute)) ||
+          (bookingHour < endHour || (bookingHour === endHour && bookingMinute <= endMinute))
+        ) {
+          isTimeValid = true;
+          break;
         }
-
-        // Nếu thông tin hợp lệ, tiến hành đặt phòng
-        const karaokeId = this.$route.params.karaokeId; 
-        const bookingData = {
-          name: this.name,
-          phone: this.phone,
-          thoi_gian_bat_dau: this.bookingTime,
-          phong_id: this.$route.params.roomId,
-          karaoke_id: karaokeId,
-          nguoi_dung_id: userId,
-        };
-
-        const bookingResponse = await axios.post("http://localhost:8080/api/datphongs", bookingData);
-        this.successMessage = "Đặt phòng thành công!";
-        this.error = null;
-
-        // Cập nhật trạng thái phòng sau khi đặt
-        const roomId = this.$route.params.roomId;
-        await axios.patch(`http://localhost:8080/api/karaokes/${karaokeId}/rooms/${roomId}`, {
-          trang_thai: "dang_su_dung",
-        });
-
-        toast.success('Đặt phòng thành công', { autoClose: 800 });
-
-        // Chuyển tới lịch sử đặt phòng
-        setTimeout(() => {
-          this.$router.push('/booking-history');
-        }, 800);
-      } catch (err) {
-        this.error = "Đã xảy ra lỗi khi đặt phòng.";
-        this.successMessage = null;
-        console.error(err);
+      } else {
+        // Khung giờ bình thường, không qua đêm
+        if (
+          (bookingHour > startHour || (bookingHour === startHour && bookingMinute >= startMinute)) &&
+          (bookingHour < endHour || (bookingHour === endHour && bookingMinute <= endMinute))
+        ) {
+          isTimeValid = true;
+          break;
+        }
       }
-    },
+    }
+
+    if (!isTimeValid) {
+      this.error = "Xin lỗi, quán chưa mở vào thời gian bạn đặt!";
+      this.successMessage = null;
+      return;
+    }
+
+    const bookingData = {
+      name: this.name,
+      phone: this.phone,
+      thoi_gian_bat_dau: this.bookingTime,
+      phong_id: roomId,
+      karaoke_id: karaokeId,
+      nguoi_dung_id: userId,
+    };
+
+    const bookingResponse = await axios.post("http://localhost:8080/api/datphongs", bookingData);
+    this.successMessage = "Đặt phòng thành công!";
+    this.error = null;
+
+    await axios.patch(`http://localhost:8080/api/karaokes/${karaokeId}/rooms/${roomId}`, {
+      trang_thai: "dang_su_dung",
+    });
+
+    toast.success('Đặt phòng thành công', { autoClose: 800 });
+
+    setTimeout(() => {
+      this.$router.push('/booking-history');
+    }, 800);
+  } catch (err) {
+    this.error = "Đã xảy ra lỗi khi đặt phòng.";
+    this.successMessage = null;
+    console.error(err);
+  }
+}
+
+
+
+
   },
 };
 </script>
@@ -114,7 +177,7 @@ export default {
 
 button {
   padding: 10px 20px;
-  background-color: #3498db;
+  background-color: #435D76;
   color: white;
   border: none;
   border-radius: 5px;
@@ -122,6 +185,7 @@ button {
   cursor: pointer;
   transition: background-color 0.3s ease;
   margin-bottom: 20px;
+  font-weight: bold;
 }
 
 button:hover {
@@ -140,6 +204,7 @@ h3 {
   color: #333;
   margin-bottom: 20px;
   text-align: center;
+  font-weight: bold;
 }
 
 label {
@@ -169,7 +234,8 @@ input[type="datetime-local"]:focus {
 button[type="submit"] {
   width: 100%;
   padding: 12px;
-  background-color: #2ecc71;
+  background-color: #435D76;
+  font-weight: bold;
   color: white;
   border: none;
   border-radius: 5px;
@@ -179,7 +245,7 @@ button[type="submit"] {
 }
 
 button[type="submit"]:hover {
-  background-color: #27ae60;
+  background-color: rgba(114, 153, 193, 0.8);
 }
 
 .error {

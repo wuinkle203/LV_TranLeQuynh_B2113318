@@ -4,7 +4,7 @@
     <div class="logo">
       <img src="D:/Computer Science/HK2-Nam4/LuanVanTotNghiep/Karaoke/frontend/src/image/logo-removebg.png" alt="Logo" height="60px" />
     </div>
-
+    <h3>Hệ Thống Đặt Phòng Karaoke</h3>
     <!-- Links -->
     <ul class="header-links">
       <!-- Nếu chưa đăng nhập -->
@@ -102,6 +102,25 @@ export default {
 
 
 <style scoped>
+
+h3 {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #333;
+  animation: zoomEffect 3s infinite alternate ease-in-out;
+}
+
+/* Hiệu ứng phóng to - thu nhỏ */
+@keyframes zoomEffect {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.2);
+  }
+}
+
+
 /* Nền mặc định */
 .header-container {
   display: flex;
@@ -111,7 +130,7 @@ export default {
   background-color: #6c2d1f;
   color: white;
   font-family: 'Segoe UI', sans-serif;
-  background: radial-gradient(circle, #34495e 0%, #2c3e50 100%);
+  background: linear-gradient(45deg, #D4D4D5 0%, #435D76 100%);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }

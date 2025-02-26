@@ -1,0 +1,91 @@
+version: "3.1"
+
+# Khai báo intents
+intents:
+  - chao_hoi
+  - tim_kiem_phong
+  - dat_phong
+
+# Khai báo entities
+entities:
+  - ngay
+  - gio
+  - so_nguoi
+  - user_id
+
+# Khai báo slots với mappings
+slots:
+  ngay:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: ngay
+    influence_conversation: false
+
+  gio:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: gio
+    influence_conversation: false
+
+  so_nguoi:
+    type: float
+    mappings:
+      - type: from_entity
+        entity: so_nguoi
+    influence_conversation: false
+
+  user_id:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: user_id
+    influence_conversation: false
+
+  dat_phong_id:
+    type: text
+    mappings:
+      - type: custom
+    influence_conversation: false
+
+# Khai báo actions
+actions:
+  - action_chao_hoi
+  - action_tim_kiem_phong
+  - action_dat_phong
+
+# Khai báo responses bot trả lời
+responses:
+  utter_chao_hoi:
+    - text: "Xin chào! Tôi có thể giúp gì cho bạn không?"
+
+  utter_ask_ngay:
+    - text: "Bạn muốn đặt phòng vào ngày nào?"
+
+  utter_ask_gio:
+    - text: "Vui lòng cho tôi biết thời gian bắt đầu?"
+
+  utter_ask_so_nguoi:
+    - text: "Bạn cần phòng cho bao nhiêu người?"
+
+  utter_ask_user_id:
+    - text: "Vui lòng đăng nhập trước khi đặt phòng."
+
+  utter_phong_trong:
+    - text: "Chúng tôi có phòng trống cho bạn vào thời gian này."
+
+  utter_phong_khong_trong:
+    - text: "Xin lỗi, không có phòng trống vào thời gian bạn yêu cầu."
+
+  utter_xac_nhan_dat_phong:
+    - text: "Bạn có muốn đặt phòng {dat_phong_id} tại quán karaoke vào {ngay} lúc {gio} không?"
+
+  utter_dat_phong_thanh_cong:
+    - text: "Đặt phòng thành công! Mã đặt phòng của bạn là {dat_phong_id}."
+
+  utter_dat_phong_that_bai:
+    - text: "Xin lỗi, đặt phòng không thành công. Vui lòng thử lại sau."
+
+  utter_error:
+    - text: "Xin lỗi, tôi không thể tìm thấy phòng cho bạn."

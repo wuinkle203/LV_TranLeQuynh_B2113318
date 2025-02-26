@@ -14,14 +14,26 @@
       <input v-model="karaoke.so_dien_thoai" id="so_dien_thoai" type="text" required />
       <span v-if="errors.so_dien_thoai" class="error">{{ errors.so_dien_thoai }}</span>
 
+      <label for="giay_phep_kinh_doanh">Số giấy phép kinh doanh:</label>
+      <input v-model="karaoke.giay_phep_kinh_doanh" id="giay_phep_kinh_doanh" type="text" required />
+      <span v-if="errors.giay_phep_kinh_doanh" class="error">{{ errors.giay_phep_kinh_doanh }}</span>
+
+
+      <label for="mo_ta">Mô tả quán:</label>
+      <textarea v-model="karaoke.mo_ta" id="mo_ta" rows="4" cols="50"></textarea>
+      <span v-if="errors.mo_ta" class="error">{{ errors.mo_ta }}</span>
+
+
       <label for="hinh_anh_quan">Hình ảnh quán:</label>
       <input type="file" id="hinh_anh_quan" @change="handleFileUpload" accept="image/*" required />
       <span v-if="errors.hinh_anh_quan" class="error">{{ errors.hinh_anh_quan }}</span>
+
 
       <div v-if="previewImage">
         <p>Ảnh xem trước:</p>
         <img :src="previewImage" alt="Preview" style="width: 150px; height: auto;" />
       </div>
+
 
       <button type="submit">Thêm</button>
     </form>
@@ -39,6 +51,8 @@ export default {
         dia_chi: "",
         so_dien_thoai: "",
         chu_so_huu_id: "",
+        giay_phep_kinh_doanh: "",
+        mo_ta: ""
       },
       hinh_anh_quan: null,
       previewImage: null,
@@ -97,6 +111,11 @@ export default {
         isValid = false;
       }
 
+      if (!this.karaoke.giay_phep_kinh_doanh || this.karaoke.giay_phep_kinh_doanh.length < 5) {
+        this.errors.giay_phep_kinh_doanh = "Giấy phép kinh doanh không hợp lệ.";
+        isValid = false;
+      }
+
       if (!this.hinh_anh_quan) {
         this.errors.hinh_anh_quan = "Vui lòng chọn ảnh.";
         isValid = false;
@@ -116,7 +135,9 @@ export default {
         formData.append("dia_chi", this.karaoke.dia_chi);
         formData.append("so_dien_thoai", this.karaoke.so_dien_thoai);
         formData.append("chu_so_huu_id", this.karaoke.chu_so_huu_id);
+        formData.append("giay_phep_kinh_doanh", this.karaoke.giay_phep_kinh_doanh);
         formData.append("hinh_anh_quan", this.hinh_anh_quan);
+        formData.append("mo_ta", this.karaoke.mo_ta);
 
         const response = await axios.post("http://localhost:8080/api/karaokes", formData, {
           headers: { "Content-Type": "multipart/form-data" },
@@ -136,7 +157,6 @@ export default {
 <style scoped>
 /* Cấu trúc chính của form */
 div {
-  font-family: 'Inter', sans-serif;
   padding: 20px;
   max-width: 500px;
   margin: 0 auto;
@@ -147,6 +167,7 @@ div {
 
 /* Tiêu đề của form */
 h2 {
+  font-weight: bold;
   font-size: 24px;
   font-weight: 600;
   color: #333;
@@ -156,6 +177,7 @@ h2 {
 
 /* Các label trong form */
 label {
+  font-weight: bold;
   font-size: 16px;
   color: #555;
   margin-bottom: 8px;
@@ -169,7 +191,7 @@ input {
   margin-bottom: 15px;
   font-size: 16px;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 10px;
   box-sizing: border-box;
 }
 
@@ -181,10 +203,10 @@ input:focus {
 /* Nút submit */
 button {
   padding: 12px 20px;
-  background-color: #45a049;
+  background-color: #435D76;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 15px;
   cursor: pointer;
   font-size: 16px;
   width: 100%;
@@ -192,7 +214,7 @@ button {
 }
 
 button:hover {
-  background-color: #388e3c;
+  background-color: rgba(114, 153, 193, 0.8);
 }
 
 /* Nếu có lỗi */

@@ -23,6 +23,10 @@
               @click="setActiveComponent('BookingHistory')">
         LỊCH SỬ ĐẶT PHÒNG
       </button>
+      <button :class="{ active: activeComponent === 'ManageMenu' }" 
+              @click="setActiveComponent('ManageMenu')">
+        QUẢN LÝ MENU
+      </button>
     </div>
     <!-- Nội dung hiển thị -->
     <div class="content">
@@ -38,7 +42,6 @@
   </div>
 </template>
 
-
 <script>
 import ManageKaraokes from "@/components/ManageKaraokes.vue";
 import AddKaraoke from "@/components/AddKaraoke.vue";
@@ -46,6 +49,7 @@ import ManagePromotions from "@/components/ManagePromotions.vue";
 import ManageRooms from "@/components/ManageRooms.vue";
 import ManageBookings from "@/components/ManageBookings.vue";
 import BookingHistory from "@/components/BookingHistory.vue";
+import ManageMenu from "@/components/ManageMenu.vue"; // ✅ Thêm component quản lý menu
 
 export default {
   components: {
@@ -54,20 +58,21 @@ export default {
     ManagePromotions,
     ManageRooms,
     ManageBookings, 
-    BookingHistory, // Thêm BookingHistory
+    BookingHistory,
+    ManageMenu, // ✅ Thêm vào danh sách component
   },
   data() {
     return {
-      menuOpen: false,
-      activeComponent: "ManageKaraokes", // Mặc định hiển thị danh sách quán karaoke
-      selectedKaraokeId: null, // Lưu id của quán karaoke được chọn
+      activeComponent: "ManageKaraokes",
+      selectedKaraokeId: null,
       validComponents: [
         "ManageKaraokes", 
         "AddKaraoke", 
         "ManagePromotions", 
         "ManageRooms", 
         "ManageBookings", 
-        "BookingHistory" // Thêm BookingHistory
+        "BookingHistory",
+        "ManageMenu", // ✅ Thêm vào danh sách hợp lệ
       ],
     };
   },
@@ -85,7 +90,7 @@ export default {
         return;
       }
       this.selectedKaraokeId = karaokeId;
-      this.activeComponent = "ManageRooms"; // Chuyển sang quản lý phòng
+      this.activeComponent = "ManageRooms";
     },
     isComponentValid(component) {
       return this.validComponents.includes(component);
@@ -93,10 +98,10 @@ export default {
     handleError(message) {
       console.error("Lỗi từ component con:", message);
     },
-    
   },
 };
 </script>
+
 
 <style scoped>
 /* Cấu trúc tổng thể của dashboard */

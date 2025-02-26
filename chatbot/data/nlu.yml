@@ -1,0 +1,38 @@
+version: "3.1"
+
+nlu:
+  - intent: chao_hoi
+    examples: |
+      - Xin chào
+      - Chào
+      - Hi
+      - Hello
+      - Chào bạn
+      - Xin chào bot
+      - Chào nhé
+
+  - intent: tim_kiem_phong
+    examples: |
+      - Tôi muốn tìm phòng vào ngày [10/2](ngay) từ [18h](gio) cho [4 người](so_nguoi)
+      - Có phòng trống vào ngày [15/02](ngay) từ [19:00](gio) không?
+      - Tìm phòng [3 người](so_nguoi) vào ngày [22/02](ngay) từ [14h](gio) cho tôi
+      - Tôi cần phòng vào ngày [5/03](ngay) lúc [22h](gio) cho [2 người](so_nguoi)
+      - Phòng nào còn trống vào ngày [12/02](ngay) từ [10h](gio) cho [6 người](so_nguoi)
+      - Tôi muốn tìm phòng vào ngày [10/2](ngay) từ [18h](gio) cho [4 người](so_nguoi)
+      - Có phòng trống vào ngày [15/02](ngay) từ [19:00](gio) không?
+      - Tìm phòng [3 người](so_nguoi) vào ngày [22/02](ngay) từ [14h](gio) cho tôi
+      - Tôi cần phòng vào ngày [5/03](ngay) lúc [22h](gio) cho [2 người](so_nguoi)
+      - Phòng nào còn trống vào ngày [12/02](ngay) từ [10h](gio) cho [6 người](so_nguoi)
+      - Kiểm tra giúp tôi phòng vào ngày [7 tháng 3](ngay) từ [10:30](gio) cho [3 khách](so_nguoi)
+      - Tôi muốn đặt phòng vào [ngày mai](ngay) từ [8h30](gio) cho [2 người](so_nguoi)
+      - Có phòng trống vào [thứ bảy tuần này](ngay) lúc [9 giờ sáng](gio) không?
+      - Tìm phòng [6 người](so_nguoi) vào [chủ nhật tới](ngay) từ [15:00](gio)
+      - Tôi cần phòng vào ngày [5/3](ngay) từ [10 giờ 30 phút](gio) cho [4 khách](so_nguoi)
+
+  - intent: dat_phong
+    examples: |
+      - Tôi muốn đặt phòng vào ngày [10/2](ngay) lúc [18h](gio) cho [4 người](so_nguoi)
+      - Đặt giúp tôi phòng vào ngày [15/02](ngay) lúc [19h](gio) cho [5 người](so_nguoi)
+      - Tôi muốn đặt phòng karaoke vào ngày [22/02](ngay) lúc [20h](gio) cho [3 người](so_nguoi)
+      - Đặt phòng cho tôi vào ngày [5/03](ngay) lúc [22h](gio) cho [2 người](so_nguoi)
+      - Tôi muốn đặt phòng vào ngày [12/02](ngay) từ [10h](gio) cho [6 người](so_nguoi)

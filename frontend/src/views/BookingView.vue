@@ -4,8 +4,8 @@
     <div v-if="error" class="error">{{ error }}</div>
 
     <div v-if="room" class="room-detail">
-      <button>
-        <router-link to='/rooms'>Quay lại</router-link>
+      <button @click="goBackToRoomList">
+        Quay lại
       </button>
       <h2>{{ room.ten_phong }} ({{ room.loai_phong }})</h2>
       
@@ -24,11 +24,28 @@
       </div>
 
       <p><strong>Sức chứa:</strong> {{ room.suc_chua }} người</p>
-      <p><strong>Giá theo giờ:</strong> {{ room.gia_theo_gio.toLocaleString() }} VND</p>
-      <p><strong>Mô tả:</strong> {{ room.mo_ta }}</p>
+      <div v-if="room.trang_thai ==='trong'">
+        <p><strong>Trạng thái phòng: </strong>Trống</p>
+      </div>
+      <div v-if="room.trang_thai ==='dang_su_dung'">
+        <p><strong>Trạng thái phòng: </strong>Đang được sử dụng</p>
+      </div>
+      <div v-if="room.trang_thai ==='can_bao_tri'">
+        <p><strong>Trạng thái phòng: </strong>Đang sửa chửa</p>
+      </div>
+      <div>
+        <h4>Giá theo giờ:</h4>
+        <ul>
+          <li v-for="(gia, index) in room.gia_theo_gio" :key="index">
+            <strong>{{ gia.gio_bat_dau }} - {{ gia.gio_ket_thuc }}:</strong> {{ gia.gia }} VNĐ
+          </li>
+        </ul>
+      </div>
+      <!-- <p><strong>Mô tả:</strong> {{ room.mo_ta }}</p> -->
+      <SuggestedRooms :roomId="room._id" />
 
       <!-- Nút đặt phòng -->
-      <button @click="toggleBookingForm">
+      <button v-if="room.trang_thai === 'trong'" @click="toggleBookingForm">
         {{ isBookingFormVisible ? "Huỷ" : "Đặt phòng" }}
       </button>
 
@@ -68,7 +85,7 @@
         <div v-if="replies[review._id] && replies[review._id].length > 0" class="replies">
           <p><strong>Phản hồi:</strong></p>
           <div v-for="reply in replies[review._id]" :key="reply._id" class="reply-item">
-            <p><strong>{{ reply.nguoi_dung_id.ho_ten }}</strong>: {{ reply.noi_dung }}</p>
+            <p><strong>{{ reply.nguoi_dung_id.ho_ten || 'Người dùng'}}</strong>: {{ reply.noi_dung }}</p>
             <p><small>{{ new Date(reply.ngay_gui).toLocaleString() }}</small></p>
             <!-- Chỉ hiển thị nút Xóa nếu người dùng là người đã gửi phản hồi này -->
             <button v-if="reply.nguoi_dung_id._id === userId" @click="deleteReply(reply._id, review._id)">
@@ -91,11 +108,16 @@
 <script>
 import axios from "axios";
 import BookingForm from "@/components/BookingForm.vue";
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
+import SuggestedRooms from "@/components/SuggestedRooms.vue";
+
 
 export default {
   name: "BookingView",
   components: {
     BookingForm,
+    SuggestedRooms
   },
   data() {
     return {
@@ -121,6 +143,10 @@ export default {
     this.fetchReviews();
   },
   methods: {
+    goBackToRoomList() {
+      // Lấy karaokeId từ params và quay lại trang danh sách phòng
+      this.$router.push(`/rooms/${this.$route.params.karaokeId}`);
+    },
     // Lấy thông tin userId từ localStorage
     loadUserId() {
       const userData = JSON.parse(localStorage.getItem("user"));
@@ -274,6 +300,7 @@ export default {
         alert("Vui lòng chọn số sao và nhập bình luận.");
         return;
       }
+      
       const userData = JSON.parse(localStorage.getItem("user"));
       const userId = userData?.userId;
       const { roomId, karaokeId } = this.$route.params;
@@ -331,12 +358,13 @@ export default {
 
 .room-detail {
   /* max-width: 1000px; Tăng chiều rộng của khu vực chi tiết phòng */
-  width: 90%;
+  width: 95%;
   margin: 0 auto;
   background-color: #fff;
   padding: 30px; /* Tăng padding để nội dung thoải mái hơn */
   border-radius: 8px;
   box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1); /* Tăng bóng đổ */
+  border: 1px solid #435D76;
 }
 
 .room-detail h2 {
@@ -358,8 +386,8 @@ export default {
 }
 
 .room-image {
-  width: 400px; /* Thiết lập chiều rộng cố định cho tất cả hình ảnh */
-  /* height: 200px; Thiết lập chiều cao cố định cho tất cả hình ảnh */
+  width: 600px; /* Thiết lập chiều rộng cố định cho tất cả hình ảnh */
+  height: 400px; 
   object-fit: cover; /* Đảm bảo hình ảnh không bị méo và phủ kín khung */
   border-radius: 8px;
 }
@@ -376,17 +404,20 @@ button:disabled {
 }
 
 button {
-  background-color: #4CAF50;
+  background-color: #435D76;
   color: white;
   border: none;
   padding: 12px 25px; /* Tăng kích thước nút */
   cursor: pointer;
-  border-radius: 5px;
-  margin: 15px 0;
+  border-radius: 15px;
+  margin: 15px 5px;
+  font-weight: bold;
 }
 
+
+
 button:hover {
-  background-color: #45a049;
+  background-color: rgba(114, 153, 193, 0.8);
 }
 
 button:focus {
@@ -461,4 +492,7 @@ textarea {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+.replies {
+  margin-left: 100px;
+}
 </style>

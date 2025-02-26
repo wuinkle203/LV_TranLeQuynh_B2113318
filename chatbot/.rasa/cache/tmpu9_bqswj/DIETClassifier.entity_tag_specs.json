@@ -1,0 +1,36 @@
+[
+  {
+    "tag_name": "entity",
+    "ids_to_tags": {
+      "1": "B-gio",
+      "2": "I-gio",
+      "3": "L-gio",
+      "4": "U-gio",
+      "5": "B-ngay",
+      "6": "I-ngay",
+      "7": "L-ngay",
+      "8": "U-ngay",
+      "9": "B-so_nguoi",
+      "10": "I-so_nguoi",
+      "11": "L-so_nguoi",
+      "12": "U-so_nguoi",
+      "0": "O"
+    },
+    "tags_to_ids": {
+      "B-gio": 1,
+      "I-gio": 2,
+      "L-gio": 3,
+      "U-gio": 4,
+      "B-ngay": 5,
+      "I-ngay": 6,
+      "L-ngay": 7,
+      "U-ngay": 8,
+      "B-so_nguoi": 9,
+      "I-so_nguoi": 10,
+      "L-so_nguoi": 11,
+      "U-so_nguoi": 12,
+      "O": 0
+    },
+    "num_tags": 13
+  }
+]

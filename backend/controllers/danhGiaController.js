@@ -59,25 +59,94 @@ exports.getAllDanhGias = async (req, res) => {
 
 
 // Tạo đánh giá mới
+const User = require('../models/User'); // Import model User
+const nodemailer = require('nodemailer');
+
+// Cấu hình email
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "guiphanhoilv@gmail.com", // Email gửi đi
+    pass: "jauv opaf efzg deuk" // Mật khẩu ứng dụng
+  }
+});
+
+const classifyComment = require('../middlewares/sentimentAnalyzer'); // Import hàm AI
+
 exports.createDanhGia = async (req, res) => {
   const { karaokeId, roomId } = req.params;
   const { nguoi_dung_id, noi_dung, so_sao } = req.body;
 
   try {
-    const newReview = new DanhGia({
-      phong_id : roomId,
-      karaoke_id: karaokeId,
-      nguoi_dung_id: nguoi_dung_id,
-      noi_dung: noi_dung,
-      so_sao: so_sao,
+    // Phân loại bình luận
+    classifyComment(noi_dung, async (sentiment) => {
+      console.log("🔍 Kết quả phân loại:", sentiment);
+
+      // Lưu đánh giá vào DB
+      const newReview = new DanhGia({
+        phong_id: roomId,
+        karaoke_id: karaokeId,
+        nguoi_dung_id,
+        noi_dung,
+        so_sao,
+      });
+
+      await newReview.save();
+
+    // Nếu đánh giá tiêu cực, gửi thông báo cho chủ quán
+    if (sentiment === "negative") {
+      const karaoke = await Karaoke.findById(karaokeId);
+      if (!karaoke) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy quán karaoke." });
+      }
+
+      // Tìm thông tin phòng karaoke
+      const room = karaoke.phong.find(p => p._id.toString() === roomId);
+      const roomName = room ? room.ten_phong : "Không xác định";
+
+      // Tìm email chủ quán từ `chu_so_huu_id`
+      const chuQuan = await User.findById(karaoke.chu_so_huu_id).select('email');
+      if (!chuQuan) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy chủ quán." });
+      }
+
+      // Tìm thông tin người đánh giá
+      const nguoiDanhGia = await User.findById(nguoi_dung_id).select('email ho_ten');
+      if (!nguoiDanhGia) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy người đánh giá." });
+      }
+
+      // Gửi email cảnh báo
+      const mailOptions = {
+        from: "guiphanhoilv@gmail.com",
+        to: chuQuan.email,
+        subject: "🚨 Cảnh báo: Bình luận tiêu cực từ khách hàng",
+        text: `Một khách hàng đã để lại đánh giá tiêu cực:\n
+        🔹 Nội dung: "${noi_dung}"
+        ⭐ Đánh giá: ${so_sao} sao
+        🏠 Quán: ${karaoke.ten_quan}
+        📍 Địa chỉ: ${karaoke.dia_chi}
+        🔢 Phòng: ${roomName}
+        👤 Người đánh giá: ${nguoiDanhGia.ho_ten} (${nguoiDanhGia.email})`
+      };
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error("Lỗi gửi email:", error);
+        } else {
+          console.log("📧 Email gửi thành công:", info.response);
+        }
+      });
+    }
+      res.status(200).json({ success: true, message: "Đánh giá thành công!" });
     });
 
-    await newReview.save();
-    res.status(200).json({ success: true, message: 'Đánh giá thành công!' });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Lỗi server.' });
+    console.error("Lỗi tạo đánh giá:", err);
+    res.status(500).json({ success: false, message: "Lỗi server." });
   }
 };
+
 
 exports.deleteDanhGia = async (req, res) => {
   try {

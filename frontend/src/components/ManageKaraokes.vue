@@ -160,10 +160,9 @@ export default {
 /* Tổng quan */
 div {
   /* max-width: 900px; */
-  width: 90%;
+  width: 95%;
   margin: 20px auto;
   padding: 20px;
-  font-family: 'Arial', sans-serif;
   background: #ffffff;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -171,6 +170,7 @@ div {
 }
 
 h2 {
+  font-weight: bold;
   text-align: center;
   color: #4a90e2;
   margin-bottom: 20px;
@@ -185,7 +185,8 @@ ul {
 }
 
 li {
-  padding: 15px;
+  font-weight: bold;
+  /* padding: 15px; */
   margin-bottom: 15px;
   background: #f9f9f9;
   border: 1px solid #ddd;
@@ -211,10 +212,11 @@ li div:first-child {
 }
 
 button {
-  padding: 8px 15px;
+  font-weight: bold;
+  padding: 10px 15px;
   font-size: 0.9rem;
   border: none;
-  border-radius: 5px;
+  border-radius: 15px;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.2s ease;
 }

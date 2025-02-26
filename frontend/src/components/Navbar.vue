@@ -10,9 +10,9 @@
       </li>
       <li>
         <router-link 
-          to="/rooms" 
-          :class="{ active: $route.path === '/rooms' }">
-          <i class="fa-solid fa-location-dot"></i> Xem Phòng
+          to="/karaokes" 
+          :class="{ active: $route.path === '/karaokes' }">
+          <i class="fa-solid fa-location-dot"></i> Quán Karaoke
         </router-link>
       </li>
       <li>
@@ -94,13 +94,13 @@ export default {
 /* Navbar container */
 .navbar-container {
   display: flex;
-  /* justify-content: center;
-  align-items: center; */
-  /* margin: 10px 10px; */
+  justify-content: center;
+  align-items: center;
   height: 80px;
-  background: radial-gradient(circle, #34495e 0%, #2c3e50 100%);
+  background: linear-gradient(-45deg, #D4D4D5 0%, #435D76 100%);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   padding: 10px 20px;
+  margin-bottom: 5px;
 }
 
 .transparent-header {
@@ -123,10 +123,10 @@ export default {
   display: inline-block;
   text-decoration: none;
   padding: 15px 30px;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: bold;
-  color: rgb(255, 255, 255);
-  /* background: linear-gradient(45deg, rgba(114, 153, 193, 0.8) 0%, rgba(44, 62, 80, 0.7) 100%); */
+  color: black;
+  background: linear-gradient(45deg, rgba(114, 153, 193, 0.8) 0%, rgba(44, 62, 80, 0.7) 100%);
   border: none;
   border-radius: 30px;
   cursor: pointer;
@@ -170,7 +170,7 @@ export default {
 
 .hamburger i {
   font-size: 2rem;
-  color: #2c3e50;
+  color: white;
 }
 
 /* Responsive styles */
@@ -184,10 +184,12 @@ export default {
     flex-direction: column;
     align-items: center;
     display: none;
+    z-index: 3;
   }
 
   .nav-links.active {
     display: flex;
+    margin-top: 70px;
   }
 
   .nav-links li {

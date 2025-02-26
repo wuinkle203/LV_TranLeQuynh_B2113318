@@ -298,7 +298,7 @@ export default {
 /* Tổng quan */
 .profile-container {
   max-width: 800px;
-  margin: 0 auto;
+  margin: auto;
   padding: 20px;
   font-family: 'Arial', sans-serif;
   background: #ffffff;
@@ -338,7 +338,7 @@ export default {
   padding: 10px 20px;
   font-size: 1rem;
   border: none;
-  border-radius: 5px;
+  border-radius: 15px;
   cursor: pointer;
   transition: all 0.3s ease;
 }

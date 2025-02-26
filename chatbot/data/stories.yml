@@ -1,0 +1,17 @@
+version: "3.1"
+
+stories:
+  - story: Chào hỏi
+    steps:
+      - intent: chao_hoi
+      - action: action_chao_hoi
+
+  - story: Tìm phòng trống
+    steps:
+      - intent: tim_kiem_phong
+      - action: action_tim_kiem_phong
+
+  - story: Đặt phòng
+    steps:
+      - intent: dat_phong
+      - action: action_dat_phong

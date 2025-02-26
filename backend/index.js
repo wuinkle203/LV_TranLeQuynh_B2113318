@@ -5,16 +5,16 @@ const app = express();  // Khởi tạo app trước khi sử dụng
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+// const multer = require('multer');
+// const path = require('path');
+// const fs = require('fs');
+const axios = require("axios");
 
 const karaokeRoutes = require('./routes/karaokeRoutes');
 const userRoutes = require('./routes/userRoutes');
 const datPhongRoutes = require('./routes/datPhongRoutes');
 const danhGiaRoutes = require('./routes/danhGiaRoutes');
 const phanHoiRoutes = require('./routes/phanHoiRoutes');
-const thongBaoRoutes = require('./routes/thongBaoRoutes');
 
 // Cấu hình CORS
 app.use(cors({
@@ -47,10 +47,28 @@ app.use('/api/users', userRoutes);
 app.use('/api/datphongs', datPhongRoutes);
 app.use('/api/danhgias', danhGiaRoutes);
 app.use('/api/phanhois', phanHoiRoutes);
-app.use('/api/thongbaos', thongBaoRoutes);
+app.use('/api', require('./routes/recommendation'));
+//Chat bot
+
+app.post("/chat", async (req, res) => {
+  const message = req.body.message;
+
+  try {
+      const response = await axios.post("http://localhost:5005/webhooks/rest/webhook", {
+          sender: "user",
+          message: message
+      });
+
+      res.json(response.data);
+  } catch (error) {
+      res.status(500).json({ error: "Lỗi kết nối Rasa" });
+  }
+});
 
 // Server lắng nghe
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+

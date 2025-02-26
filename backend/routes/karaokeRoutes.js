@@ -20,14 +20,22 @@ const {
   getAllRooms,
   getRoomDetails,
   updateRoomStatus,
-  getKaraokes
+  getKaraokes,
+  addMenuItem,
+  updateMenuItem,
+  deleteMenuItem,
+  getMenuByKaraokeId,
+  getKaraokeById
 } = require('../controllers/karaokeController');
 
 // Quản lý quán karaoke
+router.get('/all',getKaraokes);
+
 router.get('/', getAllKaraokes);
 router.post('/', upload.single("hinh_anh_quan"),createKaraoke);
 router.put('/:id', upload.single("hinh_anh_quan"), updateKaraoke);
 router.delete('/:id', deleteKaraoke);
+router.get('/:karaokeId', getKaraokeById);
 
 // Quản lý phòng karaoke
 router.get('/:karaokeId/phong', getRoomByKaraokeId);
@@ -44,8 +52,14 @@ router.delete('/:karaokeId/promotions/:promotionId', deletePromotion); // Xóa k
 // Route lấy danh sách tất cả các phòng
 router.get('/rooms', getAllRooms);
 router.get('/:karaokeId/rooms/:roomId', getRoomDetails); //Thông tin chi tiết phòng
-router.patch('/:karaokeId/rooms/:roomId', updateRoomStatus); //Thông tin chi tiết phòng
+router.patch('/:karaokeId/rooms/:roomId', updateRoomStatus);
 
-router.get('/all',getKaraokes);
+//Quản lý menu
+router.post('/:karaokeId/menu/', addMenuItem); // Thêm khuyến mãi
+router.put('/:karaokeId/menu/:menuId',updateMenuItem ); // Thêm khuyến mãi
+router.delete('/:karaokeId/menu/:menuId', deleteMenuItem); // Thêm khuyến mãi
+router.get('/:karaokeId/menu', getMenuByKaraokeId);
+
+
 
 module.exports = router;

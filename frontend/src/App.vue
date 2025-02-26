@@ -7,7 +7,7 @@
     <Navbar v-if="!isAuthPage" />
     
     <router-view @route-changed="checkRoute"></router-view>
-    
+    <ChatBot v-if="!isAuthPage" />
     <!-- Ẩn Footer nếu là trang đăng ký hoặc trang đăng nhập -->
     <Footer v-if="!isAuthPage || !isHomePage" />
   </div>
@@ -17,13 +17,14 @@
 import Navbar from './components/Navbar.vue';
 import Footer from './components/Footer.vue';
 import Header from './components/Header.vue';
-
+import ChatBot from "./components/ChatBot.vue";
 export default {
   name: 'App',
   components: {
     Navbar,
     Footer,
-    Header
+    Header,
+    ChatBot
   },
   data() {
     return {
@@ -57,8 +58,8 @@ export default {
 <style scoped>
 /* Đặt font chữ mặc định cho toàn bộ ứng dụng */
 * {
-  font-family: 'Segoe UI', sans-serif !important; /* Hoặc chọn font chữ bạn muốn */
   box-sizing: border-box; /* Giúp dễ quản lý kích thước của các phần tử */
+  font-family: 'Quicksand', sans-serif !important;
 }
 
 body {

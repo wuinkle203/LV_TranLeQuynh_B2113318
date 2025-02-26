@@ -28,7 +28,7 @@
               id="mat_khau" 
               required 
               autocomplete="new-password"
-              pattern="^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$" 
+              pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$" 
               title="Mật khẩu phải chứa ít nhất 8 ký tự, bao gồm chữ cái và số."
             />
             <i 
@@ -38,7 +38,7 @@
             ></i>
           </div>
           <p v-if="user.mat_khau && !isValidPassword" class="error-text">
-            Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ cái và số.
+            Mật khẩu phải có ít nhất 8 ký tự, chứa chữ hoa, chữ thường, số và ký tự đặc biệt.
           </p>
         </div>
 
@@ -100,7 +100,7 @@ export default {
       return usernamePattern.test(this.user.user_name);
     },
     isValidPassword() {
-      const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+      const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
       return passwordPattern.test(this.user.mat_khau);
     },
   },
@@ -181,11 +181,12 @@ html, body {
 
 
 .container {
-  font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(45deg, #7299c1 0%, #2c3e50);
-  color: #333;
+  background: url('D:\Computer Science\HK2-Nam4\LuanVanTotNghiep\Karaoke\frontend\src\image\9959299.jpg') center center fixed; 
+  background-size: cover;
+  color: white;
   margin: 0;
   padding: 0;
+  font-size: 24px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -196,22 +197,22 @@ html, body {
 
 
 .register {
-  font-family: 'Segoe UI', sans-serif;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.1); /* Nền trong suốt */
   padding: 20px 30px;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   width: 100%;
-  max-width: 400px;
+  max-width: 600px;
   box-sizing: border-box;
   animation: fadeIn 0.5s ease-in-out; /* Hiệu ứng chuyển động mượt mà */
 }
 
 .register h1 {
+  font-weight: bold;
   margin-bottom: 20px;
-  font-size: 24px;
+  font-size: 30px;
   text-align: center;
-  color: #444;
+  color: white;
 }
 
 /* Phần còn lại của CSS giữ nguyên */
@@ -236,24 +237,25 @@ html, body {
   display: block;
   font-weight: bold;
   margin-bottom: 5px;
-  font-size: 14px;
-  color: #555;
+  font-size: 24px;
+  font-weight: bold;
 }
 
 .form-group input {
+  height: 60px;
+  color: white;
   width: 100%;
-  padding: 10px 15px;
-  border: 1px solid #ccc;
-  border-radius: 15px;
-  font-size: 14px;
-  box-sizing: border-box;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  padding: 10px;
+  font-size: 28px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid #ddd; /* Nét gạch dưới */
+  outline: none;
+  transition: border-color 0.3s ease;
 }
 
 .form-group input:focus {
   border-color: #007bff;
-  box-shadow: 0 0 4px rgba(0, 123, 255, 0.5);
-  outline: none;
 }
 
 .password-input {
@@ -271,8 +273,7 @@ html, body {
   position: absolute;
   right: 10px;
   cursor: pointer;
-  font-size: 18px;
-  color: #777;
+  font-size: 28px;
   transition: color 0.3s ease;
 }
 
@@ -280,20 +281,60 @@ html, body {
   color: #007bff;
 }
 
-button[type="submit"] {
+/* Nút đăng nhập */
+button {
   width: 100%;
-  background: #007bff;
+  padding: 10px;
+  font-size: 1.1em;
   color: #fff;
-  padding: 10px 15px;
+  background: linear-gradient(90deg, #007bff, #0056b3);
   border: none;
-  border-radius: 15px;
-  font-size: 16px;
+  border-radius: 5px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.4s ease;
+}
+
+/* Hiệu ứng nền lan tỏa */
+button::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300%;
+  height: 300%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.4), transparent);
+  transition: transform 1s ease, opacity 0.5s ease;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+}
+
+/* Khi hover vào nút */
+button:hover::before {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+button:hover {
+  background: linear-gradient(90deg, #0056b3, #003d80);
+}
+
+button[type="submit"] {
+  margin-top: 5px;
+  width: 100%;
+  padding: 10px;
+  font-size: 28px;
+  font-weight: bold;
+  background-color: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 button[type="submit"]:hover {
-  background: #0056b3;
+  border-bottom: 3px solid #435D76;
 }
 
 .error {
@@ -303,23 +344,24 @@ button[type="submit"]:hover {
   padding: 10px;
   margin-top: 15px;
   border-radius: 15px;
-  font-size: 14px;
+  font-size: 24px;
 }
 
 .success {
   background: #d4edda;
-  color: #155724;
   border: 1px solid #c3e6cb;
   padding: 10px;
   margin-top: 15px;
   border-radius: 15px;
-  font-size: 14px;
+  font-size: 24px;
 }
 .login{
   margin-top: 5px;
+  font-size: 26px;
 }
 .login a{
   text-decoration: none;
   font-weight: bold;
+  font-size: 28px;
 }
 </style>

@@ -1,7 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
-import RoomListView from '../views/RoomListView.vue';
+import KaraokeListView from '../views/KaraokesListView.vue';
 import BookingView from '../views/BookingView.vue';
+import RoomList from '../views/RoomList.vue';
+import NotFound from '../views/NotFound.vue';  // Import trang NotFound
 
 const routes = [
   {
@@ -9,6 +11,11 @@ const routes = [
     name: 'Home',
     component: HomeView,
     meta: { title: 'Trang Chủ' }  // Thêm title cho trang chủ
+  },
+  {
+    path: '/:pathMatch(.*)*',  // Định nghĩa đường dẫn không hợp lệ
+    name: 'notfound',
+    component: NotFound
   },
   {
     path: '/login',
@@ -22,6 +29,13 @@ const routes = [
     component: () => import('../components/RegisterForm.vue'),
     meta: { title: 'Đăng Ký Tài Khoản' }  // Thêm title cho trang đăng ký tài khoản
   },
+  { 
+    path: '/rooms/:karaokeId', 
+    name: 'RoomList', 
+    component: RoomList,
+    props: true, 
+    meta: { title: 'Danh Sách Phòng Karaoke' }
+    },
   {
     path: '/profile',
     name: 'Profile',
@@ -29,9 +43,9 @@ const routes = [
     meta: { title: 'Trang cá nhân' }  // Thêm title cho trang cá nhân người dùng
   },
   {
-    path: '/rooms',
-    name: 'Rooms',
-    component: RoomListView,
+    path: '/karaokes',
+    name: 'KaraokeListView',
+    component: KaraokeListView,
     meta: { title: 'Danh Sách Phòng Karaoke' }  // Thêm title cho trang danh sách phòng
   },
   {

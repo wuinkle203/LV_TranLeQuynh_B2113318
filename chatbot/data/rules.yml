@@ -1,0 +1,18 @@
+version: "3.1"
+
+rules:
+
+  - rule: Phản hồi khi chào hỏi
+    steps:
+      - intent: chao_hoi
+      - action: action_chao_hoi
+
+  - rule: Xử lý tìm phòng
+    steps:
+      - intent: tim_kiem_phong
+      - action: action_tim_kiem_phong
+
+  - rule: Xử lý đặt phòng
+    steps:
+      - intent: dat_phong
+      - action: action_dat_phong

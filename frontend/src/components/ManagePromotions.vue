@@ -152,6 +152,9 @@
         }
       },
       async deletePromotion(karaokeId, promotionId) {
+      // Cảnh báo xác nhận trước khi xóa
+      const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa khuyến mãi này?");
+      if (confirmDelete) {
         try {
           await axios.delete(
             `http://localhost:8080/api/karaokes/${karaokeId}/promotions/${promotionId}`
@@ -161,7 +164,12 @@
         } catch (error) {
           console.error("Lỗi khi xóa khuyến mãi:", error);
         }
-      },
+      } else {
+        console.log("Đã hủy việc xóa.");
+      }
+    },
+
+    
       formatDate(value) {
         if (!value) return "";
         const date = new Date(value);
@@ -205,6 +213,7 @@
     color: #333;
     text-align: center;
     margin-bottom: 40px;
+
   }
 
   /* Thẻ quán karaoke */
@@ -224,8 +233,10 @@
 
   .karaoke-card h4 {
     font-size: 1.6em;
-    color: #333;
+    color: blue;
     margin: 0 0 10px;
+    font-weight: bold;
+
   }
 
   .karaoke-card p {

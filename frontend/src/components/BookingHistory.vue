@@ -10,7 +10,20 @@
         <button @click="fetchDatPhongs(karaoke._id)">Xem Lịch Sử Đặt Phòng</button>
 
         <div v-if="currentKaraokeId === karaoke._id">
+                   <!-- 🔹 Bộ chọn khoảng thời gian -->
+         <div class="thong-ke">
+            <h5>Thống kê doanh thu</h5>
+            <label>Từ ngày: 
+              <input type="date" v-model="fromDate">
+            </label>
+            <label>Đến ngày: 
+              <input type="date" v-model="toDate">
+            </label>
+            <button @click="fetchDoanhThu(karaoke._id)">Xem Doanh Thu</button>
+            <p v-if="doanhThu !== null">Tổng doanh thu: {{ formatCurrency(doanhThu) }}</p>
+          </div>
           <h5>Danh sách đặt phòng đã hoàn thành/hủy:</h5>
+          
           <div v-if="datPhongs.length">
             <div v-for="datPhong in datPhongs" :key="datPhong._id" class="dat-phong-card">
               <p>{{ datPhong.phong_info?.ten_phong || "Phòng không có thông tin" }}</p>
@@ -19,7 +32,6 @@
                 Trạng thái
                 <span v-if="datPhong.trang_thai === 'da_hoan_thanh'" class="trang-thai-cho">: Đã Hoàn Thành</span>
                 <span v-if="datPhong.trang_thai === 'da_huy'" class="trang-thai-duyet">: Đã Huỷ</span>
-                <!-- <span v-if="datPhong.trang_thai === 'da_hoan_thanh'" class="trang-thai-hoan-thanh">: Đã xong</span> -->
               </p>
               <p>
                 Thời gian: Từ {{ formatDate(datPhong.thoi_gian_bat_dau) }}
@@ -27,9 +39,48 @@
               </p>
               <p>Ghi chú: {{ datPhong.ghi_chu || "Không có ghi chú" }}</p>
               <p>Tổng tiền: {{ formatCurrency(datPhong.tong_tien) }}</p>
+
+              <!-- Hiển thị số giờ và mức giá cho mỗi khoảng thời gian -->
+              <div v-if="datPhong.danh_sach_gia_theo_gio">
+                <h5>Thông tin tính tiền theo giờ:</h5>
+                <ul>
+                  <li v-for="(gia, index) in datPhong.danh_sach_gia_theo_gio" :key="index">
+                    Số giờ: {{ gia.so_gio }} - Mức giá: {{ formatCurrency(gia.gia_theo_gio) }}
+                    {{ formatDate(gia.gio_bat_dau) }} - {{ formatDate(gia.gio_ket_thuc) }}
+                  </li>
+                </ul>
+              </div>
+
+              <button @click="toggleDetail(datPhong._id)">Xem Chi Tiết</button>
+
+              <div v-if="datPhong.showDetail">
+                <!-- Thông tin hóa đơn -->
+                <div class="invoice-details">
+                  <h5>Thông tin hóa đơn:</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Tên món</th>
+                        <th>Số lượng</th>
+                        <th>Đơn giá</th>
+                        <th>Thành tiền</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="monAn in datPhong.danh_sach_mon_an" :key="monAn.mon_an_id">
+                        <td>{{ monAn.ten }}</td>
+                        <td>{{ monAn.so_luong }}</td>
+                        <td>{{ formatCurrency(monAn.don_gia) }}</td>
+                        <td>{{ formatCurrency(monAn.thanh_tien) }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
           <p v-else>Không có lịch sử đặt phòng.</p>
+
         </div>
       </div>
     </div>
@@ -38,6 +89,8 @@
     </div>
   </div>
 </template>
+
+
 
 <script>
 import axios from "axios";
@@ -48,9 +101,12 @@ export default {
       karaokes: [], // Danh sách quán karaoke
       datPhongs: [], // Danh sách đặt phòng của quán hiện tại
       currentKaraokeId: null, // ID quán karaoke hiện tại để hiển thị lịch sử đặt phòng
+      selectedMonth: "", // Tháng được chọn để thống kê
+      doanhThu: null, // Tổng doanh thu
     };
   },
   methods: {
+    
     async fetchKaraokes() {
       const userData = JSON.parse(localStorage.getItem("user"));
       const userId = userData?.userId;
@@ -68,15 +124,17 @@ export default {
         console.error("Lỗi khi tải danh sách quán karaoke:", error);
       }
     },
+
     async fetchDatPhongs(karaokeId) {
-      // Nếu danh sách đang hiển thị, ấn lần nữa để ẩn đi
+      // Reset doanh thu khi chọn quán khác
+      this.doanhThu = null;
+
       if (this.currentKaraokeId === karaokeId) {
-        this.currentKaraokeId = null; // Đặt lại ID karaoke
-        this.datPhongs = []; // Xóa danh sách đặt phòng
+        this.currentKaraokeId = null;
+        this.datPhongs = [];
         return;
       }
 
-      // Nếu chưa hiển thị, tải danh sách đặt phòng
       this.currentKaraokeId = karaokeId;
 
       try {
@@ -92,6 +150,36 @@ export default {
         console.error("Lỗi khi tải lịch sử đặt phòng:", error);
       }
     },
+
+    toggleDetail(datPhongId) {
+      const datPhong = this.datPhongs.find((item) => item._id === datPhongId);
+      if (datPhong) {
+        datPhong.showDetail = !datPhong.showDetail;
+      }
+    },
+
+    async fetchDoanhThu(karaokeId) {
+      if (!this.fromDate || !this.toDate) {
+        alert("Vui lòng chọn khoảng ngày!");
+        return;
+      }
+
+      try {
+        const response = await axios.get("http://localhost:8080/api/datphongs/doanhthu", {
+          params: { 
+            karaoke_id: karaokeId, 
+            start_date: this.fromDate, 
+            end_date: this.toDate 
+          },
+        });
+        this.doanhThu = response.data.totalRevenue;
+      } catch (error) {
+        console.error("Lỗi khi lấy doanh thu:", error);
+        this.doanhThu = null;
+      }
+    },
+
+
     formatDate(value) {
       if (!value) return "";
       const date = new Date(value);
@@ -102,11 +190,11 @@ export default {
       const minutes = ("0" + date.getMinutes()).slice(-2);
       return `${year}-${month}-${day} ${hours}:${minutes}`;
     },
+
     formatCurrency(value) {
       if (!value) return "0 VND";
       return value.toLocaleString("vi-VN", { style: "currency", currency: "VND" });
     },
-
   },
   created() {
     this.fetchKaraokes();
@@ -115,10 +203,11 @@ export default {
 </script>
 
 
+
+
 <style scoped>
 /* Tổng thể */
 .booking-history {
-  font-family: 'Poppins', sans-serif;
   margin: 20px auto;
   /* max-width: 900px; */
   width: 90%;
@@ -221,4 +310,32 @@ p {
   text-align: center;
   font-weight: bold;
 }
+
+.invoice-details {
+  margin-top: 20px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.invoice-details h5 {
+  margin-bottom: 10px;
+}
+
+.invoice-details table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.invoice-details th, .invoice-details td {
+  padding: 8px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.invoice-details th {
+  background-color: #f4f4f4;
+}
+
 </style>

@@ -8,7 +8,35 @@
       <input type="text" v-model="newRoom.ten_phong" placeholder="Tên phòng" required />
       <input type="text" v-model="newRoom.loai_phong" placeholder="Loại phòng" required />
       <input type="number" v-model="newRoom.suc_chua" placeholder="Sức chứa" required />
-      <input type="number" v-model="newRoom.gia_theo_gio" placeholder="Giá theo giờ" required />
+      
+      <!-- Nhập giá theo giờ -->
+      <div v-for="(price, index) in newRoom.gia_theo_gio" :key="index" class="price-entry">
+        <input 
+          type="time" 
+          v-model="price.gio_bat_dau" 
+          placeholder="Giờ bắt đầu" 
+          required 
+          min="00:00" 
+          max="23:59" 
+        />
+        <input 
+          type="time" 
+          v-model="price.gio_ket_thuc" 
+          placeholder="Giờ kết thúc" 
+          required 
+        />
+        <input 
+          type="number" 
+          v-model="price.gia" 
+          placeholder="Giá" 
+          required 
+        />
+        <button @click="removePrice(index)" type="button">Xóa khung giờ</button>
+      </div>
+
+
+      <button @click="addPrice" type="button">Thêm khung giờ</button>
+
       <textarea v-model="newRoom.mo_ta" placeholder="Mô tả"></textarea>
       <select v-model="newRoom.trang_thai" required>
         <option value="trong">Đang Hoạt Động</option>
@@ -23,46 +51,48 @@
       </div>
       <button type="submit">Thêm phòng</button>
     </form>
-    <div v-if="rooms.length" class="room-list"><h3>Danh sách phòng</h3></div>
+
     <!-- Danh sách Phòng -->
     <div v-if="rooms.length" class="room-list">
       <div v-for="room in paginatedRooms" :key="room._id" class="room-card">
-  <h4>{{ room.ten_phong }}</h4>
-  <p>Loại phòng: {{ room.loai_phong }}</p>
-  <p>Sức chứa: {{ room.suc_chua }}</p>
-  <p>Giá theo giờ: {{ room.gia_theo_gio }} VNĐ</p>
-  <p class="trangthai">
-    Trạng thái
-    <div v-if="room.trang_thai == 'trong'" class="trang_thai">: Phòng Trống</div>
-    <div v-if="room.trang_thai == 'dang_su_dung'" class="trang_thai">: Phòng Đã Được Đặt</div>
-    <div v-if="room.trang_thai == 'can_bao_tri'" class="trang_thai">: Phòng Đang Được Bảo Trì</div>
-  </p>
-  <p>Mô tả: {{ room.mo_ta }}</p>
+        <h4>{{ room.ten_phong }}</h4>
+        <p>Loại phòng: {{ room.loai_phong }}</p>
+        <p>Sức chứa: {{ room.suc_chua }}</p>
+        <p>Giá theo giờ:</p>
+        <ul>
+          <li v-for="(price, index) in room.gia_theo_gio" :key="index">
+            {{ price.gio_bat_dau }} - {{ price.gio_ket_thuc }}: {{ price.gia }} VNĐ
+          </li>
+        </ul>
+        <p class="trangthai">
+          Trạng thái
+          <div v-if="room.trang_thai == 'trong'" class="trang_thai">: Phòng Trống</div>
+          <div v-if="room.trang_thai == 'dang_su_dung'" class="trang_thai">: Phòng Đã Được Đặt</div>
+          <div v-if="room.trang_thai == 'can_bao_tri'" class="trang_thai">: Phòng Đang Được Bảo Trì</div>
+        </p>
+        <p>Mô tả: {{ room.mo_ta }}</p>
 
-  <div v-if="room.hinh_anh && room.hinh_anh.length">
-  <h5>Hình ảnh phòng:</h5>
-  <div class="room-images">
-    <!-- Hiển thị ảnh theo chỉ số của từng phòng -->
-    <div v-if="imageIndexes[room._id] >= 0 && imageIndexes[room._id] < room.hinh_anh.length">
-      <img 
-        :src="'http://localhost:8080/uploads/' + room.hinh_anh[imageIndexes[room._id]]" 
-        alt="Room Image" 
-        class="room-image" 
-      />
-    </div>
-  </div>
-  <!-- Điều hướng ảnh -->
-  <div class="image-navigation">
-    <button @click="prevImage(room)" :disabled="imageIndexes[room._id] <= 0"><</button>
-    <button @click="nextImage(room)" :disabled="imageIndexes[room._id] >= room.hinh_anh.length - 1">></button>
-  </div>
-</div>
+        <div v-if="room.hinh_anh && room.hinh_anh.length">
+          <h5>Hình ảnh phòng:</h5>
+          <div class="room-images">
+            <div v-if="imageIndexes[room._id] >= 0 && imageIndexes[room._id] < room.hinh_anh.length">
+              <img 
+                :src="'http://localhost:8080/uploads/' + room.hinh_anh[imageIndexes[room._id]]" 
+                alt="Room Image" 
+                class="room-image" 
+              />
+            </div>
+          </div>
+          <div class="image-navigation">
+            <button @click="prevImage(room)" :disabled="imageIndexes[room._id] <= 0"><</button>
+            <button @click="nextImage(room)" :disabled="imageIndexes[room._id] >= room.hinh_anh.length - 1">></button>
+          </div>
+        </div>
 
-
-  <div class="button-container">
-    <button @click="toggleEditMode(room)">Sửa</button>
-    <button @click="deleteRoom(room._id)">Xóa</button>
-  </div>
+        <div class="button-container">
+          <button @click="toggleEditMode(room)">Sửa</button>
+          <button @click="deleteRoom(room._id)">Xóa</button>
+        </div>
 
         <div v-if="currentRoom._id === room._id && editMode">
           <h3>Sửa Phòng</h3>
@@ -70,7 +100,34 @@
             <input type="text" v-model="currentRoom.ten_phong" placeholder="Tên phòng" required />
             <input type="text" v-model="currentRoom.loai_phong" placeholder="Loại phòng" required />
             <input type="number" v-model="currentRoom.suc_chua" placeholder="Sức chứa" required />
-            <input type="number" v-model="currentRoom.gia_theo_gio" placeholder="Giá theo giờ" required />
+            
+            <!-- Nhập lại giá theo giờ khi sửa -->
+            <div v-for="(price, index) in currentRoom.gia_theo_gio" :key="index" class="price-entry">
+              <input 
+                type="time" 
+                v-model="price.gio_bat_dau" 
+                placeholder="Giờ bắt đầu" 
+                required 
+              />
+              <input 
+                type="time" 
+                v-model="price.gio_ket_thuc" 
+                placeholder="Giờ kết thúc" 
+                required 
+              />
+              <input 
+                type="number" 
+                v-model="price.gia" 
+                placeholder="Giá" 
+                required 
+              />
+              <button @click="removePriceUpdate(index)" type="button">Xóa khung giờ</button>
+            </div>
+
+
+            <button @click="addPriceUpdate" type="button">Thêm khung giờ</button>
+
+
             <textarea v-model="currentRoom.mo_ta" placeholder="Mô tả"></textarea>
             <select v-model="currentRoom.trang_thai" required>
               <option value="trong"> Phòng Trống</option>
@@ -88,18 +145,20 @@
         </div>
       </div>
     </div>
-    
+
     <div v-else>
       <p>Chưa có phòng nào. Hãy thêm phòng mới!</p>
     </div>
-          <!-- Điều hướng phân trang -->
-      <div class="pagination">
+
+    <!-- Điều hướng phân trang -->
+    <div class="pagination">
       <button @click="prevPage" :disabled="currentPage === 1">Trang trước</button>
       <span>Trang {{ currentPage }} / {{ totalPages }}</span>
       <button @click="nextPage" :disabled="currentPage === totalPages">Trang sau</button>
     </div>
   </div>
 </template>
+
 
 
 <script>
@@ -116,7 +175,7 @@ export default {
         ten_phong: "",
         loai_phong: "",
         suc_chua: 0,
-        gia_theo_gio: 0,
+        gia_theo_gio: [{ gio_bat_dau: '', gio_ket_thuc: '', gia: '' }],
         mo_ta: "",
         trang_thai: "trong",
         hinh_anh: [],
@@ -126,7 +185,7 @@ export default {
         ten_phong: "",
         loai_phong: "",
         suc_chua: 0,
-        gia_theo_gio: 0,
+        gia_theo_gio: [{ gio_bat_dau: '', gio_ket_thuc: '', gia: '' }],
         mo_ta: "",
         trang_thai: "",
         hinh_anh: [],
@@ -137,7 +196,7 @@ export default {
       editMode: false,
       isFormVisible: false, 
       currentImageIndex: 0, 
-      imageIndexes: {},// Biến để kiểm soát hiển thị form thêm phòng
+      imageIndexes: {}, // Biến để kiểm soát hiển thị form thêm phòng
     };
   },
   mounted() {
@@ -158,47 +217,75 @@ export default {
     },
   },
   methods: {
+    addPrice() {
+      const newPrice = {
+        gio_bat_dau: '',
+        gio_ket_thuc: '',
+        gia: ''
+      };
+      this.newRoom.gia_theo_gio.push(newPrice);
+    },
 
-  // Di chuyển đến ảnh trước
-  prevImage(room) {
-    if (this.imageIndexes[room._id] > 0) {
-      this.imageIndexes[room._id]--;
-    }
-  },
+      addPriceUpdate() {
+      // Tạo một đối tượng khung giờ mặc định
+      const newPrice = {
+        gio_bat_dau: '',
+        gio_ket_thuc: '',
+        gia: 0
+      };
+      
+      // Thêm khung giờ mới vào mảng gia_theo_gio
+      this.currentRoom.gia_theo_gio.push(newPrice);
+    },
+    removePriceUpdate(index) {
+      // Loại bỏ khung giờ tại vị trí index
+      this.currentRoom.gia_theo_gio.splice(index, 1);
+    },
+      // Xóa khung giờ khỏi danh sách
+    removePrice(index) {
+      this.newRoom.gia_theo_gio.splice(index, 1);
+    },
+   
+    // Di chuyển đến ảnh trước
+    prevImage(room) {
+      if (this.imageIndexes[room._id] > 0) {
+        this.imageIndexes[room._id]--;
+      }
+    },
 
-  // Di chuyển đến ảnh sau
-  nextImage(room) {
-    if (this.imageIndexes[room._id] < room.hinh_anh.length - 1) {
-      this.imageIndexes[room._id]++;
-    }
-  },
+    // Di chuyển đến ảnh sau
+    nextImage(room) {
+      if (this.imageIndexes[room._id] < room.hinh_anh.length - 1) {
+        this.imageIndexes[room._id]++;
+      }
+    },
 
-  
-  // Hàm để chuyển về ảnh đầu tiên khi cập nhật thông tin phòng
-  resetImageIndex() {
-    this.currentImageIndex = 0;
-  },
-  
-
+    // Hàm để chuyển về ảnh đầu tiên khi cập nhật thông tin phòng
+    resetImageIndex() {
+      this.currentImageIndex = 0;
+    },
+    
     prevPage() {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-    }
-  },
-  nextPage() {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-    }
-  },
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
+    },
+
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
+    },
+
     fetchRooms() {
       axios
         .get(`http://localhost:8080/api/karaokes/${this.karaokeId}/phong`)
         .then((response) => {
           this.rooms = response.data.phong || [];
-                  // Khởi tạo giá trị chỉ số ảnh cho từng phòng
-        this.rooms.forEach(room => {
-          this.imageIndexes[room._id] = 0; // Mặc định hiển thị ảnh đầu tiên
-        });
+          // Khởi tạo giá trị chỉ số ảnh cho từng phòng
+          this.rooms.forEach(room => {
+            this.imageIndexes[room._id] = 0; // Mặc định hiển thị ảnh đầu tiên
+          });
         })
         .catch((error) => {
           alert("Không thể tải danh sách phòng.");
@@ -219,32 +306,6 @@ export default {
       );
     },
 
-    addRoom() {
-      if (this.newRoom.hinh_anh.length === 0) {
-        alert("Vui lòng chọn ít nhất một tệp hình ảnh.");
-        return;
-      }
-
-      const formData = new FormData();
-      Object.keys(this.newRoom).forEach((key) => {
-        if (key !== "hinh_anh") formData.append(key, this.newRoom[key]);
-      });
-
-      Array.from(this.newRoom.hinh_anh).forEach((file) => {
-        formData.append("hinh_anh", file);
-      });
-
-      axios
-        .post(`http://localhost:8080/api/karaokes/${this.karaokeId}/phong`, formData)
-        .then(() => {
-          this.fetchRooms();
-          this.resetForm();
-          toast.success("Thêm phòng thành công");
-        })
-        .catch(() => {
-          alert("Thêm phòng không thành công.");
-        });
-    },
 
     toggleEditMode(room) {
       if (this.currentRoom._id === room._id && this.editMode) {
@@ -255,27 +316,95 @@ export default {
         this.editMode = true;
       }
     },
+    
 
-    updateRoom() {
+    addRoom() {
+      if (this.newRoom.hinh_anh.length === 0) {
+        alert("Vui lòng chọn ít nhất một tệp hình ảnh.");
+        return;
+      }
+
       const formData = new FormData();
-      Object.keys(this.currentRoom).forEach((key) => {
-        if (key !== "hinh_anh") formData.append(key, this.currentRoom[key]);
+      formData.append("ten_phong", this.newRoom.ten_phong);
+      formData.append("loai_phong", this.newRoom.loai_phong);
+      formData.append("suc_chua", this.newRoom.suc_chua);
+      formData.append("mo_ta", this.newRoom.mo_ta);
+      formData.append("trang_thai", this.newRoom.trang_thai);
+
+      this.newRoom.gia_theo_gio.forEach((price, index) => {
+        formData.append(`gia_theo_gio[${index}][gio_bat_dau]`, price.gio_bat_dau);
+        formData.append(`gia_theo_gio[${index}][gio_ket_thuc]`, price.gio_ket_thuc);
+        formData.append(`gia_theo_gio[${index}][gia]`, price.gia);
       });
 
-      // Nếu không có hình ảnh mới, giữ lại hình ảnh cũ
+      Array.from(this.newRoom.hinh_anh).forEach((file) => {
+        formData.append("hinh_anh", file);
+      });
+
+      console.log(formData);
+
+      axios
+        .post(`http://localhost:8080/api/karaokes/${this.karaokeId}/phong`, formData)
+        .then(() => {
+          this.fetchRooms();
+          this.resetForm();
+          toast.success("Thêm phòng thành công");
+        })
+        .catch((error) => {
+          console.error(error);
+          alert("Thêm phòng không thành công.");
+        });
+    },
+
+
+    updateRoom() {
+      // Kiểm tra và tạo formData
+      const formData = new FormData();
+      formData.append("ten_phong", this.currentRoom.ten_phong);
+      formData.append("loai_phong", this.currentRoom.loai_phong);
+      formData.append("suc_chua", this.currentRoom.suc_chua);
+      formData.append("mo_ta", this.currentRoom.mo_ta);
+      formData.append("trang_thai", this.currentRoom.trang_thai);
+
+      // Kiểm tra và thêm giá theo giờ vào formData
+      if (this.currentRoom.gia_theo_gio && Array.isArray(this.currentRoom.gia_theo_gio)) {
+        this.currentRoom.gia_theo_gio.forEach((price, index) => {
+          // Kiểm tra giá theo giờ có hợp lệ không
+          // if (!price.gio_bat_dau || !price.gio_ket_thuc || !price.gia <= 0) {
+          //   alert(`Thông tin giá theo giờ không hợp lệ ở mục ${index + 1}.`);
+          //   return;
+          // }
+          formData.append(`gia_theo_gio[${index}][gio_bat_dau]`, price.gio_bat_dau);
+          formData.append(`gia_theo_gio[${index}][gio_ket_thuc]`, price.gio_ket_thuc);
+          formData.append(`gia_theo_gio[${index}][gia]`, price.gia);
+        });
+      }
+
+      // Kiểm tra hình ảnh mới và cũ
       if (this.currentRoom.hinh_anh.length === 0) {
+        // Nếu không có hình ảnh mới, thêm hình ảnh cũ
         if (this.currentRoom.hinh_anh_cu && this.currentRoom.hinh_anh_cu.length > 0) {
-          // Chuyển các hình ảnh cũ vào formData
           this.currentRoom.hinh_anh_cu.forEach((file) => {
             formData.append("hinh_anh", file);
           });
         }
       } else {
-        // Nếu có hình ảnh mới, thêm các hình ảnh mới vào formData
+        // Nếu có hình ảnh mới, thêm tất cả hình ảnh mới
         Array.from(this.currentRoom.hinh_anh).forEach((file) => {
           formData.append("hinh_anh", file);
         });
       }
+
+      // In ra dữ liệu FormData trước khi gửi đi
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ', ' + pair[1]);
+    }
+
+    // Kiểm tra các đối tượng File
+    Array.from(this.currentRoom.hinh_anh).forEach(file => {
+      console.log(file);  // Kiểm tra xem file có hợp lệ không
+    });
+
 
       // Gửi yêu cầu PUT với formData
       axios
@@ -286,10 +415,12 @@ export default {
           this.editMode = false;
           toast.success("Cập nhật phòng thành công");
         })
-        .catch(() => {
+        .catch((error) => {
+          console.error(error);
           alert("Cập nhật phòng không thành công.");
         });
     },
+
 
 
 
@@ -298,7 +429,7 @@ export default {
         ten_phong: "",
         loai_phong: "",
         suc_chua: 0,
-        gia_theo_gio: 0,
+        gia_theo_gio: [{ gio_bat_dau: '', gio_ket_thuc: '', gia: '' }],
         mo_ta: "",
         trang_thai:"",
         hinh_anh: [],
@@ -329,19 +460,19 @@ export default {
 </script>
 
 
+
 <style scoped>
 /* Container chính */
 .container {
-  max-width: 1200px;
+  /* max-width: 1200px; */
+  width: 95%;
   margin: 0 auto;
   padding: 20px;
 }
 
 /* Tiêu đề */
 h3 {
-  font-family: 'Roboto', sans-serif;
   color: #333;
-  font-size: 24px;
   text-align: center;
   margin-bottom: 40px;
   letter-spacing: 1px;
@@ -437,6 +568,8 @@ form button:active {
 }
 /* Danh sách phòng */
 .room-list {
+  border: 1px solid #435D76;
+  border-radius: 15px;
   margin-bottom: 20px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
